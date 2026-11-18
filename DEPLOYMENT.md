@@ -4,13 +4,13 @@
 
 > สถานะเอกสาร: ไฟล์ build/API/Worker ผ่านการทดสอบด้วย mock ในเครื่อง การ deploy และการทดสอบบัญชีจริงต้องทำตามขั้นตอนนี้หลังตั้งค่า Netlify และ GitHub ที่เจ้าของควบคุม ค่าใช้จ่าย 0 บาท/เดือนเป็นเป้าหมายภายในโควตาฟรีของบัญชีจริง ไม่ใช่คำรับประกัน
 
-โค้ดถูก push ขึ้น public repository แล้ว และ private data repository มี commit เริ่มต้น `ba74ec7` Netlify Site จริงคือ `https://mangawatcher.netlify.app` โดยหน้า API placeholder ตอบ HTTP 200 และ `/api/session` ตอบ HTTP 503 พร้อมข้อความว่า `ยังไม่ตั้งค่า site origin` จนกว่าจะกำหนด environment variables ด้านล่าง Workflow Pages [#44303510719](https://github.com/Sillvy3635/MangaWatcher/actions/runs/44303510719) หยุดที่ขั้นตรวจ `MW_API_ORIGIN` ตามที่ตั้งใจไว้ ขณะตรวจ URL ของ Pages ยังตอบ HTTP 404
+โค้ดถูก push ขึ้น public repository แล้ว และ private data repository มี commit เริ่มต้น `ba74ec7` Netlify Site จริงคือ `https://mangawatcher.netlify.app` โดยตั้งค่าตัวแปรครบทั้ง 12 ตัวและ deploy รอบ `6afda77b16a0a2d2a2ad2c1e` แล้ว ปัจจุบัน `/api/session` ตอบ HTTP 401 (`กรุณาเข้าสู่ระบบด้วย GitHub`), CORS อนุญาต `https://sillvy3635.github.io`, และ `/api/auth/start` ส่ง HTTP 302 ไป GitHub OAuth พร้อมใช้งานแล้ว ส่วน Workflow Pages [#44315180831](https://github.com/Sillvy3635/MangaWatcher/actions/runs/44315180831) เผยแพร่สำเร็จและ `https://sillvy3635.github.io/MangaWatcher/` (รวมถึง `?view=queue`, `manifest.webmanifest`, `sw.js`) ตอบ HTTP 200 แล้ว
 
 ## 1. เตรียมข้อมูลเดิม
 
 1. เก็บ `data/mangawatcher.sqlite3` หรือ `data/mangapulse.sqlite3` และไฟล์ `.bak` เดิมไว้นอก public repo
 2. เปิด local app ด้วย `python server.py` แล้วใช้หน้า **ฐานข้อมูล → สำรอง JSON ทั้งหมด** เพื่อได้ไฟล์ schema 2 ตรวจว่ามีเรื่อง/แหล่ง/ตอนตามจริง ไฟล์นี้เป็นข้อมูลส่วนตัว **ห้าม commit**
-3. Repository `MangaWatcher-Data` มี commit เริ่มต้น `ba74ec7` ที่มีเพียง README และ `.gitignore` แล้ว branch `main` พร้อมสำหรับ GitHub Contents API และยังไม่มี JSON ข้อมูลจริง
+3. Repository `MangaWatcher-Data` เริ่มจาก commit `ba74ec7` และมีข้อมูลที่ย้ายจาก private `manga-notifier` ภายหลัง ก่อนนำเข้า JSON สำรองจาก local ต้องส่งออก JSON ที่อยู่บน cloud ปัจจุบันและตรวจการรวมข้อมูล อย่านำเข้าไฟล์ที่ทับข้อมูลเดิมโดยไม่ตรวจ
 
 ## 2. ตรวจ repository สาธารณะที่ส่งขึ้นแล้ว
 
@@ -46,7 +46,7 @@ Netlify Site `mangawatcher` สร้างแล้วจาก **Sillvy3635/Ma
 | `MW_DATA_BRANCH` | `main` |
 | `MW_DATA_TOKEN` | Fine-grained token สำหรับ private data repo ในขั้น 5; ใส่เฉพาะ Netlify |
 
-สร้าง session secret บนเครื่องของเจ้าของด้วย PowerShell: `[Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(48))` เก็บผลใน Netlify UI เท่านั้น ห้ามบันทึกลง repository การเปลี่ยนค่านี้จะทำให้ session เดิมหมดสิทธิ์ทันที
+สร้าง session secret บนเครื่องของเจ้าของด้วย PowerShell: `$b = New-Object byte[] 48; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)` (หรือ `python -c "import secrets; print(secrets.token_urlsafe(48))"`) เก็บผลใน Netlify UI เท่านั้น ห้ามบันทึกลง repository การเปลี่ยนค่านี้จะทำให้ session เดิมหมดสิทธิ์ทันที
 
 ## 4. ตั้ง GitHub OAuth
 
@@ -65,7 +65,7 @@ Route ของหน้าเว็บใช้ `?view=queue` เป็นต�
 ## 7. นำเข้าข้อมูลและเปิด Worker
 
 1. เปิด Pages URL แล้วกด **เข้าสู่ระบบด้วย GitHub** ตรวจว่า callback กลับมาที่ Pages URL เดิมและ fragment `#mw_session=...` ถูกลบจาก address bar หลังโหลด บัญชีอื่นต้องถูกปฏิเสธ
-2. ไปหน้า **ฐานข้อมูล → นำเข้า JSON** เลือกไฟล์ที่สำรองจาก local ในขั้น 1 คลัง private จะได้ `mangawatcher.json` schema 2 เก็บ SQLite local เดิมไว้เป็น backup เพิ่มเติม
+2. ไปหน้า **ฐานข้อมูล** และตรวจว่าข้อมูลจาก `manga-notifier` ปรากฏ 16 เรื่อง/17 แหล่ง/17 ตอน โดยแหล่งทั้งหมดเป็น manual/disabled ก่อนนำเข้าข้อมูลชุดอื่น ให้ส่งออก JSON ปัจจุบันและตรวจการรวมข้อมูล เก็บ SQLite local เดิมไว้เป็น backup เพิ่มเติม
 3. ที่ repository โค้ดไป **Actions → Update manga metadata → Run workflow** เพื่อทดสอบ Worker ครั้งแรก Workflow `manga-update.yml` รันตามเวลา `17 * * * *` (ทุกชั่วโมงโดยประมาณ) และ manual ได้ แหล่ง RSS/MangaDex ต้องเป็น URL ที่เจ้าของได้รับอนุญาต; ไม่มีรายการต้นทางจริงในโค้ด
 4. ตรวจ `MangaWatcher-Data/mangawatcher.json` และ commit history เฉพาะใน private repo ถ้าไม่มี source ที่ถึงรอบตรวจ Worker จะไม่เขียน commit ใหม่ หากตรวจแล้วมีการเปลี่ยนแปลงสถานะ/เวลา/ตอน จะเขียนเป็น batch commit พร้อม SHA conflict check
 

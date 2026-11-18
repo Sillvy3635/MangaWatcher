@@ -2,6 +2,8 @@
 
 MangaWatcher รวม metadata ตอนใหม่ของ Manga, Manhwa และ Manhua จากแหล่งที่ผู้ใช้เพิ่มเอง เปรียบเทียบ RAW / ENG / TH และจัดคิวงานแปล UI ภาษาไทยแบบ dark admin dashboard ใช้ React/TypeScript/Vite ส่วน backend local ใช้ Python 3.10+ และ SQLite ในเครื่อง โค้ด production เตรียม GitHub Pages + Netlify Functions + GitHub private JSON และ Actions แล้ว ดูขั้นตอนจริงใน [DEPLOYMENT.md](DEPLOYMENT.md) ไม่มีข้อมูลตัวอย่างปะปนกับข้อมูลจริง
 
+ข้อมูลจาก private `manga-notifier` branch `main` ถูกย้ายเฉพาะรายการติดตามปัจจุบันเข้า private `MangaWatcher-Data` โดยปิดการตรวจอัตโนมัติของเว็บต้นทางที่ยังไม่มี Adapter ที่ยืนยันแล้ว รายละเอียดและวิธีย้อนกลับอยู่ใน [docs/MANGA_NOTIFIER_IMPORT.md](docs/MANGA_NOTIFIER_IMPORT.md)
+
 ## เริ่มใช้งานบน Windows
 
 1. ติดตั้ง Python 3.10+ และ Node.js รุ่นที่รองรับ Vite (Node 20.19+ หรือ 22.12+)

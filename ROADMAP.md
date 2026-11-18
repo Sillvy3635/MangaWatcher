@@ -25,7 +25,9 @@
 - 18 พฤศจิกายน 2026: push โค้ดขึ้น `Sillvy3635/MangaWatcher` แล้ว (`57106da`); GitHub Actions รอบล่าสุด #44303510719 หยุดที่การตรวจ `MW_API_ORIGIN` เพราะยังไม่มี URL Netlify Site ในการตั้งค่า Pages URL ยังตอบ 404 ต้องตั้งค่า Production ก่อนถือว่าออนไลน์
 - 18 พฤศจิกายน 2026: เริ่ม private repo `Sillvy3635/MangaWatcher-Data` ด้วย README และ `.gitignore` เท่านั้น (`ba74ec7`); รอนำเข้า JSON schema 2 จากข้อมูลจริงหลัง API พร้อม
 
-- 18 พฤศจิกายน 2026: สร้าง Netlify Site `https://mangawatcher.netlify.app` แล้ว deploy โค้ด API สำเร็จ แต่ `/api/session` ยังตอบ 503 เพราะต้องตั้ง `MW_SITE_ORIGIN` และตัวแปรอื่นใน Netlify; Pages ยังไม่เผยแพร่เพราะรอ `MW_API_ORIGIN`
+- 18 พฤศจิกายน 2026: สร้าง Netlify Site `https://mangawatcher.netlify.app` ตั้งค่าตัวแปรครบทั้ง 12 ตัว และ deploy รอบ `6afda77b16a0a2d2a2ad2c1e` สำเร็จ ยืนยันผล live แล้วว่า `/api/session` ตอบ HTTP 401, CORS อนุญาต `https://sillvy3635.github.io`, และ `/api/auth/start` ส่ง HTTP 302 ไป GitHub OAuth ได้ถูกต้อง; GitHub Pages เผยแพร่ผ่าน Actions รอบ `#44315180831` สำเร็จและ `https://sillvy3635.github.io/MangaWatcher/` (รวม `?view=queue`, `manifest.webmanifest`, `sw.js`) ตอบ HTTP 200 พร้อมเข้าสู่ระบบและนำเข้าข้อมูล JSON แล้ว
+
+- 18 พฤศจิกายน 2026: ย้ายข้อมูลจาก `manga-notifier` main commit `2f93449` เฉพาะ 17 URL ปัจจุบันเป็น 16 เรื่อง/17 แหล่ง/17 ตอนใน private JSON พร้อม archive ไฟล์ต้นฉบับ 75 tracker keys แยกไว้ แหล่งทั้งหมดเป็น manual/disabled; ยังไม่ตรวจเว็บไซต์สดหรือสิทธิ์ HTML/API และยังต้องยืนยันการอ่านข้อมูลหลังล็อกอินจริง
 - Discord/Telegram แจ้งเตือนด้วย idempotency; Push ภายหลังเมื่อ auth, browser support และ device QA ผ่าน ไม่ใส่ secret ใน frontend
 
 ## Phase 3 — ประสบการณ์ผู้ใช้และข้อมูลขั้นสูง (ทำบางส่วน)

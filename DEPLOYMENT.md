@@ -4,11 +4,13 @@
 
 > สถานะเอกสาร: ไฟล์ build/API/Worker ผ่านการทดสอบด้วย mock ในเครื่อง การ deploy และการทดสอบบัญชีจริงต้องทำตามขั้นตอนนี้หลังตั้งค่า Netlify และ GitHub ที่เจ้าของควบคุม ค่าใช้จ่าย 0 บาท/เดือนเป็นเป้าหมายภายในโควตาฟรีของบัญชีจริง ไม่ใช่คำรับประกัน
 
+โค้ดถูก push ขึ้น public repository แล้วที่ commit `c7933a2` และ private data repository มี commit เริ่มต้น `ba74ec7` Workflow Pages รอบแรกหยุดที่ขั้นตรวจ `MW_API_ORIGIN` ตามที่ตั้งใจไว้ เพื่อไม่เผยแพร่ frontend ที่ชี้ API ผิด จัด Netlify Site และตั้ง variable นี้ก่อนกด Run workflow อีกครั้ง
+
 ## 1. เตรียมข้อมูลเดิม
 
 1. เก็บ `data/mangawatcher.sqlite3` หรือ `data/mangapulse.sqlite3` และไฟล์ `.bak` เดิมไว้นอก public repo
 2. เปิด local app ด้วย `python server.py` แล้วใช้หน้า **ฐานข้อมูล → สำรอง JSON ทั้งหมด** เพื่อได้ไฟล์ schema 2 ตรวจว่ามีเรื่อง/แหล่ง/ตอนตามจริง ไฟล์นี้เป็นข้อมูลส่วนตัว **ห้าม commit**
-3. Repository `MangaWatcher-Data` ในภาพยังว่าง ให้เพิ่ม `README.md` ใน GitHub UI โดยตั้ง visibility เป็น **Private** ตามเดิม เพื่อสร้าง branch `main` ก่อนใช้ GitHub Contents API ไม่ต้องใส่ข้อมูลจริงใน README
+3. Repository `MangaWatcher-Data` มี commit เริ่มต้น `ba74ec7` ที่มีเพียง README และ `.gitignore` แล้ว branch `main` พร้อมสำหรับ GitHub Contents API และยังไม่มี JSON ข้อมูลจริง
 
 ## 2. ส่งโค้ดขึ้น repository สาธารณะ
 

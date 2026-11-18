@@ -13,20 +13,21 @@ export class ApiError extends Error {
 
 export function consumeLoginFragment(): void {
   if (!pagesMode || !window.location.hash.startsWith("#mw_session=")) return;
-  const token = decodeURIComponent(window.location.hash.slice("#mw_session=".length));
-  if (/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token)) {
-    window.sessionStorage.setItem(sessionKey, token);
-  }
+  try {
+    const token = decodeURIComponent(window.location.hash.slice("#mw_session=".length));
+    if (/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token)) window.sessionStorage.setItem(sessionKey, token);
+  } catch { /* Reject malformed fragments and unavailable storage. */ }
   window.history.replaceState(null, "", window.location.pathname + window.location.search);
 }
 
 export function loginUrl(): string { return endpoint("auth/start"); }
 export function clearSession(): void {
-  if (pagesMode) window.sessionStorage.removeItem(sessionKey);
+  if (pagesMode) { try { window.sessionStorage.removeItem(sessionKey); } catch { /* Storage unavailable. */ } }
 }
 
 function bearer(): string {
-  const token = window.sessionStorage.getItem(sessionKey);
+  let token: string | null = null;
+  try { token = window.sessionStorage.getItem(sessionKey); } catch { /* Storage unavailable. */ }
   if (!token) throw new ApiError("กรุณาเข้าสู่ระบบด้วย GitHub", 401);
   return token;
 }

@@ -3,7 +3,7 @@ import { applyMutation, toState, validateSnapshot } from '../../cloud/model.mjs'
 import { readSnapshot, storeConfig, StoreError, writeSnapshot } from '../../cloud/store.mjs'
 
 export const config = { path: '/api/*', rateLimit: { windowLimit: 120, windowSize: 60, aggregateBy: ['ip', 'domain'] } }
-const MUTATIONS = new Set(['manga', 'source', 'release', 'task', 'bulk-track', 'settings', 'delete'])
+const MUTATIONS = new Set(['manga', 'source', 'website', 'release', 'task', 'bulk-track', 'settings', 'delete'])
 const baseHeaders = { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' }
 
 function withCors(response, request, auth) {

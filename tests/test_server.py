@@ -23,6 +23,18 @@ class Tests(unittest.TestCase):
         payload={'source_id':self.sid,'chapter':'12','url':'https://example.com/12','lang':'ENG'}
         s.mutate('/api/release',payload);s.mutate('/api/release',payload);self.assertEqual(len(s.state()['releases']),1)
         s.mutate('/api/delete',{'type':'manga','id':self.mid});self.assertEqual(len(s.state()['releases']),0)
+    def test_website_registry_is_not_a_manga_source(self):
+        s.mutate('/api/website',{'name':'Example Catalog','url':'https://example.org/catalog','lang':'ENG'})
+        self.assertEqual(len(s.state()['websites']),1)
+        self.assertEqual(len(s.state()['sources']),1)
+        with self.assertRaises(ValueError):s.mutate('/api/website',{'name':'Duplicate','url':'https://example.org/catalog','lang':'ENG'})
+        with self.assertRaises(ValueError):s.mutate('/api/website',{'name':'Bad','url':'http://example.org/catalog','lang':'ENG'})
+        backup=s.export_data()
+        self.assertEqual(len(json.loads(next(row['value'] for row in backup['tables']['settings'] if row['key']=='website_registry'))),1)
+        s.mutate('/api/delete',{'type':'website','id':1})
+        self.assertEqual(s.state()['websites'],[])
+        s.restore_data(backup)
+        self.assertEqual(len(s.state()['websites']),1)
     def test_dex(self):
         rows=s.dex_parse({'result':'ok','data':[{'id':'abc','attributes':{'chapter':'12.0','translatedLanguage':'th','publishAt':'2026-11-18T12:00:00Z'}}]},'ALL');self.assertEqual(rows[0]['lang'],'TH');self.assertEqual(rows[0]['chapter'],'12')
     def test_error_log(self):

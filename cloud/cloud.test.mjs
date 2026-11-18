@@ -21,6 +21,21 @@ test('snapshot validation, mutation and state preserve relationships', () => {
   assert.throws(() => applyMutation(data, 'source', { manga_id: 1, name: 'bad', url: 'http://example.org', kind: 'rss', lang: 'RAW' }))
 })
 
+test('website registry is separate from per-series sources and survives schema 2 export', () => {
+  const data = snapshot()
+  applyMutation(data, 'website', { name: 'Example Catalog', url: 'https://example.org/catalog', lang: 'ENG' })
+  assert.equal(toState(data).websites.length, 1)
+  assert.equal(toState(data).sources.length, 0)
+  assert.equal(toState(data).websites[0].status, 'รอ Adapter และตรวจสิทธิ์')
+  assert.throws(() => applyMutation(data, 'website', { name: 'Duplicate', url: 'https://example.org/catalog', lang: 'ENG' }))
+  assert.throws(() => applyMutation(data, 'website', { name: 'Unsafe', url: 'http://example.org/catalog', lang: 'ENG' }))
+  applyMutation(data, 'website', { id: 1, name: 'Renamed', url: 'https://example.org/catalog', lang: 'TH' })
+  assert.equal(toState(data).websites[0].lang, 'TH')
+  validateSnapshot(JSON.parse(JSON.stringify(data)))
+  applyMutation(data, 'delete', { type: 'website', id: 1 })
+  assert.equal(toState(data).websites.length, 0)
+})
+
 test('GitHub store uses SHA and reports concurrent writes', async () => {
   const config = storeConfig(env)
   const data = snapshot()
@@ -104,6 +119,10 @@ test('cloud API requires session and CSRF, imports once, reads and mutates priva
     assert.equal(created.status, 200)
     assert.equal(file.tables.manga[0].title, 'เรื่องจริง')
     assert.equal(puts, 2)
+    const website = await handler(new Request(`${env.MW_SITE_ORIGIN}/api/website`, { method: 'POST', headers, body: JSON.stringify({ name: 'Example Catalog', url: 'https://example.org/catalog', lang: 'ENG' }) }))
+    assert.equal(website.status, 200)
+    assert.equal(JSON.parse(file.tables.settings.find(row => row.key === 'website_registry').value).length, 1)
+    assert.equal(puts, 3)
     const staleImport = await handler(new Request(`${env.MW_SITE_ORIGIN}/api/import`, { method: 'POST', headers: { ...headers, 'If-Match': '"sha-1"' }, body: JSON.stringify(snapshot()) }))
     assert.equal(staleImport.status, 409)
   } finally {

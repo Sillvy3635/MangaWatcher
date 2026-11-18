@@ -50,6 +50,7 @@ import {
   type Release,
   type Source,
   type Task,
+  type Website,
 } from "./types";
 
 type Page =
@@ -406,7 +407,7 @@ function App() {
   const [language, setLanguage] = useState<Language>("ALL");
   const [collapsed, setCollapsed] = useStored("mw.sidebar.collapsed", false);
   const [mobileNav, setMobileNav] = useState(false);
-  const [form, setForm] = useState<"manga" | "source" | "release" | null>(null);
+  const [form, setForm] = useState<"manga" | "source" | "website" | "release" | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [mangaId, setMangaId] = useState<number | null>(null);
   const load = useCallback(async () => {
@@ -440,7 +441,7 @@ function App() {
     void mutate(path, payload).catch((e) => setNotice((e as Error).message));
   };
   const open = (
-    kind: "manga" | "source" | "release",
+    kind: "manga" | "source" | "website" | "release",
     id?: number,
     parent?: number,
   ) => {
@@ -462,8 +463,8 @@ function App() {
       setNotice((e as Error).message);
     }
   };
-  const remove = async (type: "manga" | "source", id: number) => {
-    if (window.confirm("ลบรายการนี้และข้อมูลตอนที่เกี่ยวข้องหรือไม่?")) {
+  const remove = async (type: "manga" | "source" | "website", id: number) => {
+    if (window.confirm(type === "website" ? "ลบเว็บไซต์นี้จากทะเบียนหรือไม่?" : "ลบรายการนี้และข้อมูลตอนที่เกี่ยวข้องหรือไม่?")) {
       try {
         await mutate("delete", { type, id });
       } catch (e) {
@@ -832,6 +833,19 @@ function App() {
       ),
     },
   ];
+  const websiteColumns: Column<Website>[] = [
+    { key: "name", label: "เว็บไซต์", width: 210, value: (site) => site.name },
+    { key: "url", label: "URL", width: 360, value: (site) => site.url,
+      cell: (site) => <a href={site.url} target="_blank" rel="noopener noreferrer">{site.url}</a> },
+    { key: "lang", label: "ภาษา", width: 90, value: (site) => site.lang,
+      cell: (site) => languageBadge(site.lang) },
+    { key: "status", label: "สถานะ", width: 220, value: (site) => site.status },
+    { key: "actions", label: "จัดการ", width: 105, value: (site) => site.id,
+      cell: (site) => <div className="row-actions">
+        <Button size="icon-sm" variant="outline" aria-label={`แก้ไข ${site.name}`} onClick={() => open("website", site.id)}><Pencil size={14} /></Button>
+        <Button size="icon-sm" variant="outline" aria-label={`ลบ ${site.name}`} onClick={() => void remove("website", site.id)}><Trash2 size={14} /></Button>
+      </div> },
+  ];
   const filteredReleases = data.releases.filter(
     (r) => language === "ALL" || r.lang === language,
   );
@@ -841,9 +855,10 @@ function App() {
         <Plus size={15} /> เพิ่มเรื่อง
       </Button>
     ) : page === "sources" ? (
-      <Button onClick={() => open("source")}>
-        <Plus size={15} /> เพิ่มเว็บไซต์
-      </Button>
+      <div className="row-actions">
+        <Button onClick={() => open("website")}><Plus size={15} /> เพิ่มเว็บไซต์</Button>
+        <Button variant="outline" onClick={() => open("source")}><Plus size={15} /> เพิ่มแหล่งรายเรื่อง</Button>
+      </div>
     ) : page === "updates" ? (
       <Button onClick={() => open("release")}>
         <Plus size={15} /> เพิ่มตอนเอง
@@ -1236,7 +1251,15 @@ function App() {
           {page === "sources" && (
             <>
               {section(
-                "แหล่งข้อมูลที่เพิ่มไว้",
+                "ทะเบียนเว็บไซต์ต้นทาง",
+                <>
+                  {searchBar}
+                  <DenseTable id="websites" rows={data.websites} columns={websiteColumns} search={search} />
+                  <p className="form-help">เว็บไซต์ในทะเบียนยังไม่ถูกตรวจอัตโนมัติ ต้องมี Adapter และสิทธิ์เข้าถึงก่อน</p>
+                </>,
+              )}
+              {section(
+                "แหล่งรายเรื่องที่เพิ่มไว้",
                 <>
                   {searchBar}
                   <DenseTable
@@ -1253,7 +1276,7 @@ function App() {
                   <span>MangaDex API</span>
                   <span>RSS / Atom</span>
                   <span>เพิ่มตอนเอง</span>
-                  <span>HTML เฉพาะเว็บ: รอ URL และสิทธิ์ใช้งาน</span>
+                  <span>HTML เฉพาะเว็บ: รอ Adapter และสิทธิ์ใช้งาน</span>
                 </div>,
               )}
             </>
@@ -1409,7 +1432,7 @@ function EditorModal({
   onClose,
   onSubmit,
 }: {
-  kind: "manga" | "source" | "release";
+  kind: "manga" | "source" | "website" | "release";
   editingId: number | null;
   mangaId: number | null;
   data: AppState;
@@ -1418,6 +1441,7 @@ function EditorModal({
 }) {
   const manga = data.manga.find((m) => m.id === editingId);
   const source = data.sources.find((s) => s.id === editingId);
+  const website = data.websites.find((site) => site.id === editingId);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
   const submit = async (event: FormEvent<HTMLFormElement>) => {
@@ -1440,6 +1464,7 @@ function EditorModal({
           id: editingId,
           enabled: fields.enabled === "on",
         });
+      if (kind === "website") await onSubmit("website", { ...fields, id: editingId });
       if (kind === "release") await onSubmit("release", fields);
     } catch (e) {
       setError((e as Error).message);
@@ -1463,9 +1488,11 @@ function EditorModal({
                 : "เพิ่มมังงะ"
               : kind === "source"
                 ? editingId
-                  ? "แก้ไขเว็บไซต์ต้นทาง"
-                  : "เพิ่มเว็บไซต์ต้นทาง"
-                : "เพิ่มตอนด้วยตัวเอง"}
+                  ? "แก้ไขแหล่งรายเรื่อง"
+                  : "เพิ่มแหล่งรายเรื่อง"
+                : kind === "website"
+                  ? editingId ? "แก้ไขเว็บไซต์ต้นทาง" : "เพิ่มเว็บไซต์ต้นทาง"
+                  : "เพิ่มตอนด้วยตัวเอง"}
           </h2>
           <Button
             variant="ghost"
@@ -1584,6 +1611,16 @@ function EditorModal({
               <p className="form-help">
                 ALL ใช้กับ MangaDex เท่านั้น ใช้ API หรือ RSS ที่ได้รับอนุญาต
               </p>
+            </>
+          )}
+          {kind === "website" && (
+            <>
+              <label>ชื่อเว็บไซต์ <Input name="name" required maxLength={150} defaultValue={website?.name} /></label>
+              <label>URL หน้ารวมเรื่อง <Input type="url" name="url" required defaultValue={website?.url} placeholder="https://example.org/series" /></label>
+              <label>ภาษา <select className="field-select" name="lang" defaultValue={website?.lang || "ENG"}>
+                <option>RAW</option><option>ENG</option><option>TH</option>
+              </select></label>
+              <p className="form-help">บันทึกเป็นทะเบียนเว็บไซต์เท่านั้น ยังไม่เริ่มดึงข้อมูลจนกว่าจะมี Adapter และตรวจสิทธิ์ใช้งาน</p>
             </>
           )}
           {kind === "release" && (

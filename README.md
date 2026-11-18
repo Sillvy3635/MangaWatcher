@@ -4,6 +4,8 @@ MangaWatcher รวม metadata ตอนใหม่ของ Manga, Manhwa แ
 
 ข้อมูลจาก private `manga-notifier` branch `main` ถูกย้ายเฉพาะรายการติดตามปัจจุบันเข้า private `MangaWatcher-Data` โดยปิดการตรวจอัตโนมัติของเว็บต้นทางที่ยังไม่มี Adapter ที่ยืนยันแล้ว รายละเอียดและวิธีย้อนกลับอยู่ใน [docs/MANGA_NOTIFIER_IMPORT.md](docs/MANGA_NOTIFIER_IMPORT.md)
 
+หน้า **เว็บไซต์ต้นทาง** แยกทะเบียนเว็บไซต์ออกจากแหล่งรายเรื่องแล้ว เพิ่ม/แก้ไข/ลบเว็บไซต์ได้โดยไม่ต้องสร้างเรื่องจำลอง ทะเบียนนี้เป็น metadata เท่านั้น; การเพิ่มเว็บไซต์ไม่เริ่มตรวจอัตโนมัติ Asura Scans ถูกลงทะเบียนใน private JSON เป็นสถานะรอ Adapter และตรวจสิทธิ์ เนื่องจากคำขออัตโนมัติปัจจุบันได้รับ HTTP 403 challenge
+
 ## เริ่มใช้งานบน Windows
 
 1. ติดตั้ง Python 3.10+ และ Node.js รุ่นที่รองรับ Vite (Node 20.19+ หรือ 22.12+)

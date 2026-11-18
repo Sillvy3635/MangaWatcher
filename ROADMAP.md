@@ -28,6 +28,8 @@
 - 18 พฤศจิกายน 2026: สร้าง Netlify Site `https://mangawatcher.netlify.app` ตั้งค่าตัวแปรครบทั้ง 12 ตัว และ deploy รอบ `6afda77b16a0a2d2a2ad2c1e` สำเร็จ ยืนยันผล live แล้วว่า `/api/session` ตอบ HTTP 401, CORS อนุญาต `https://sillvy3635.github.io`, และ `/api/auth/start` ส่ง HTTP 302 ไป GitHub OAuth ได้ถูกต้อง; GitHub Pages เผยแพร่ผ่าน Actions รอบ `#44315180831` สำเร็จและ `https://sillvy3635.github.io/MangaWatcher/` (รวม `?view=queue`, `manifest.webmanifest`, `sw.js`) ตอบ HTTP 200 พร้อมเข้าสู่ระบบและนำเข้าข้อมูล JSON แล้ว
 
 - 18 พฤศจิกายน 2026: ย้ายข้อมูลจาก `manga-notifier` main commit `2f93449` เฉพาะ 17 URL ปัจจุบันเป็น 16 เรื่อง/17 แหล่ง/17 ตอนใน private JSON พร้อม archive ไฟล์ต้นฉบับ 75 tracker keys แยกไว้ แหล่งทั้งหมดเป็น manual/disabled; ยังไม่ตรวจเว็บไซต์สดหรือสิทธิ์ HTML/API และยังต้องยืนยันการอ่านข้อมูลหลังล็อกอินจริง
+
+- 18 พฤศจิกายน 2026: เพิ่มทะเบียนเว็บไซต์ต้นทางใน schema 2 settings และหน้า Admin รองรับเพิ่ม/แก้ไข/ลบโดยไม่ผูกกับเรื่อง บันทึก Asura Scans ใน private JSON เป็น ENG/รอ Adapter หลังตรวจคำขออัตโนมัติได้ HTTP 403 challenge; ไม่เปิด scraping หรือพยายามข้ามการป้องกัน ขั้นต่อไปคือหา API/RSS ที่ได้รับอนุญาตหรืออนุญาตจากเจ้าของเว็บไซต์ก่อนทำ Adapter
 - Discord/Telegram แจ้งเตือนด้วย idempotency; Push ภายหลังเมื่อ auth, browser support และ device QA ผ่าน ไม่ใส่ secret ใน frontend
 
 ## Phase 3 — ประสบการณ์ผู้ใช้และข้อมูลขั้นสูง (ทำบางส่วน)

@@ -26,6 +26,24 @@ const chapter = value => {
   return raw
 }
 const setting = (snapshot, key) => snapshot.tables.settings.find(row => row.key === key)?.value
+const websiteRegistry = snapshot => {
+  const raw = setting(snapshot, 'website_registry')
+  if (raw === undefined) return []
+  let items
+  try { items = JSON.parse(raw) } catch { fail('รายการเว็บไซต์ไม่ถูกต้อง') }
+  if (!Array.isArray(items) || items.length > 100) fail('รายการเว็บไซต์ไม่ถูกต้อง')
+  const ids = new Set(), urls = new Set()
+  for (const item of items) {
+    if (!item || typeof item !== 'object' || Array.isArray(item) || Object.keys(item).sort().join('|') !== 'id|lang|name|status|url' || !Number.isSafeInteger(item.id) || item.id < 1 || typeof item.name !== 'string' || !item.name.trim() || item.name.length > 150 || !LANGS.has(item.lang) || item.lang === 'ALL' || typeof item.status !== 'string' || item.status.length > 150 || !metadataUrl(item.url) || new URL(item.url).protocol !== 'https:' || ids.has(item.id) || urls.has(item.url)) fail('รายการเว็บไซต์ไม่ถูกต้อง')
+    ids.add(item.id); urls.add(item.url)
+  }
+  return items
+}
+const saveWebsiteRegistry = (snapshot, items) => {
+  const row = snapshot.tables.settings.find(item => item.key === 'website_registry')
+  if (row) row.value = JSON.stringify(items)
+  else snapshot.tables.settings.push({ key: 'website_registry', value: JSON.stringify(items) })
+}
 const logChange = (snapshot, message) => snapshot.tables.logs.push({ id: nextId(snapshot.tables.logs), source_id: null, at: date(), status: 'จัดการ', message })
 
 export function validateSnapshot(snapshot) {
@@ -45,6 +63,7 @@ export function validateSnapshot(snapshot) {
   }
   if (settings.find(row => row.key === 'refresh_mode')?.value !== 'all' && settings.find(row => row.key === 'refresh_mode')?.value !== 'tracked') fail('การตั้งค่าไม่ถูกต้อง')
   if (settings.some(row => typeof row.key !== 'string' || typeof row.value !== 'string') || new Set(settings.map(row => row.key)).size !== settings.length) fail('การตั้งค่าซ้ำหรือไม่ถูกต้อง')
+  websiteRegistry(snapshot)
   for (const rows of [manga, sources, releases, logs]) {
     if (rows.some(row => !row || !Number.isSafeInteger(row.id) || row.id < 1) || new Set(rows.map(row => row.id)).size !== rows.length) fail('ID ซ้ำหรือไม่ถูกต้อง')
   }
@@ -84,7 +103,7 @@ export function toState(snapshot) {
     return { id: row.release_id, ...row, chapter: release.chapter, url: release.url, lang: release.lang, source_name: source.name, manga_id: manga.id, manga_title: manga.title }
   }).sort((a, b) => b.updated.localeCompare(a.updated) || b.id - a.id)
   const logs = t.logs.map(row => ({ ...row, source_name: row.source_id === null ? 'ระบบ' : sourceById.get(row.source_id)?.name || 'ลบแล้ว' })).sort((a, b) => b.id - a.id).slice(0, 100)
-  return { manga: [...t.manga].sort((a, b) => a.title.localeCompare(b.title, 'th')), sources, releases, tasks, logs, refresh_mode: setting(snapshot, 'refresh_mode'), busy: false }
+  return { manga: [...t.manga].sort((a, b) => a.title.localeCompare(b.title, 'th')), sources, websites: websiteRegistry(snapshot), releases, tasks, logs, refresh_mode: setting(snapshot, 'refresh_mode'), busy: false }
 }
 
 export function applyMutation(snapshot, action, payload) {
@@ -94,6 +113,20 @@ export function applyMutation(snapshot, action, payload) {
   if (action === 'settings') {
     if (!['all', 'tracked'].includes(payload.refresh_mode)) fail('โหมดตรวจไม่ถูกต้อง')
     t.settings.find(row => row.key === 'refresh_mode').value = payload.refresh_mode
+  } else if (action === 'website') {
+    const items = websiteRegistry(snapshot)
+    const name = text(payload.name, 150), siteUrl = url(payload.url), lang = text(payload.lang)
+    if (!name || !LANGS.has(lang) || lang === 'ALL') fail('ชื่อหรือภาษาเว็บไซต์ไม่ถูกต้อง')
+    if (items.some(item => item.url === siteUrl && item.id !== Number(payload.id))) fail('เว็บไซต์นี้มีอยู่แล้ว')
+    if (payload.id) {
+      const item = items.find(row => row.id === id(payload.id))
+      if (!item) fail('ไม่พบเว็บไซต์', 404)
+      Object.assign(item, { name, url: siteUrl, lang })
+    } else {
+      if (items.length >= 100) fail('เว็บไซต์เต็มจำนวน')
+      items.push({ id: nextId(items), name, url: siteUrl, lang, status: 'รอ Adapter และตรวจสิทธิ์' })
+    }
+    saveWebsiteRegistry(snapshot, items)
   } else if (action === 'manga') {
     const title = text(payload.title)
     if (!title) fail('กรุณากรอกชื่อเรื่อง')
@@ -136,7 +169,11 @@ export function applyMutation(snapshot, action, payload) {
     else t.translation_tasks.push({ release_id, stage, updated: date() })
   } else if (action === 'delete') {
     const entityId = id(payload.id)
-    if (payload.type === 'manga') {
+    if (payload.type === 'website') {
+      const items = websiteRegistry(snapshot)
+      if (!items.some(row => row.id === entityId)) fail('ไม่พบเว็บไซต์', 404)
+      saveWebsiteRegistry(snapshot, items.filter(row => row.id !== entityId))
+    } else if (payload.type === 'manga') {
       const sourceIds = t.sources.filter(row => row.manga_id === entityId).map(row => row.id)
       t.manga = t.manga.filter(row => row.id !== entityId)
       t.sources = t.sources.filter(row => row.manga_id !== entityId)

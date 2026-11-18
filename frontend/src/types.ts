@@ -19,6 +19,13 @@ export type Source = {
   next_due: string | null;
   status: string;
 };
+export type Website = {
+  id: number;
+  name: string;
+  url: string;
+  lang: "RAW" | "ENG" | "TH";
+  status: string;
+};
 export type Release = {
   id: number;
   manga_id: number;
@@ -62,6 +69,7 @@ export type Task = {
 export type AppState = {
   manga: Manga[];
   sources: Source[];
+  websites: Website[];
   releases: Release[];
   tasks: Task[];
   logs: Log[];
@@ -71,6 +79,7 @@ export type AppState = {
 export const emptyState: AppState = {
   manga: [],
   sources: [],
+  websites: [],
   releases: [],
   tasks: [],
   logs: [],

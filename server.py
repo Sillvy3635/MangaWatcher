@@ -58,6 +58,24 @@ def refresh_mode(c):
     row=c.execute("SELECT value FROM settings WHERE key='refresh_mode'").fetchone()
     return row['value'] if row and row['value'] in ('all','tracked') else 'all'
 
+def website_registry(c):
+    row=c.execute("SELECT value FROM settings WHERE key='website_registry'").fetchone()
+    return parse_website_registry(row['value']) if row else []
+
+def parse_website_registry(raw):
+    try: items=json.loads(raw)
+    except (TypeError,json.JSONDecodeError): raise ValueError('รายการเว็บไซต์ไม่ถูกต้อง')
+    if not isinstance(items,list) or len(items)>100: raise ValueError('รายการเว็บไซต์ไม่ถูกต้อง')
+    ids=set(); urls=set()
+    for item in items:
+        if (not isinstance(item,dict) or set(item)!={'id','name','url','lang','status'} or type(item['id']) is not int or item['id']<1 or not isinstance(item['name'],str) or not item['name'].strip() or len(item['name'])>150 or item['lang'] not in ('RAW','ENG','TH') or not isinstance(item['status'],str) or len(item['status'])>150 or not isinstance(item['url'],str) or len(item['url'])>2000 or urlparse(item['url']).scheme!='https' or not urlparse(item['url']).hostname or urlparse(item['url']).username or urlparse(item['url']).password or item['id'] in ids or item['url'] in urls):
+            raise ValueError('รายการเว็บไซต์ไม่ถูกต้อง')
+        ids.add(item['id']); urls.add(item['url'])
+    return items
+
+def save_website_registry(c,items):
+    c.execute("INSERT INTO settings(key,value) VALUES('website_registry',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",(json.dumps(items,ensure_ascii=False),))
+
 def retry_minutes(c, source_id, interval):
     # Recent consecutive failures delay only scheduled checks, never manual checks.
     statuses=c.execute('SELECT status FROM logs WHERE source_id=? ORDER BY id DESC LIMIT 5',(source_id,)).fetchall()
@@ -209,7 +227,7 @@ def state():
                     checked=datetime.fromisoformat(source['checked'])
                     source['next_due']=(checked+timedelta(minutes=retry_minutes(c,source['id'],source['interval']))).isoformat(timespec='seconds')
                 except ValueError: pass
-        return {'manga':rows(c,'SELECT * FROM manga ORDER BY title'),'sources':sources,'releases':rows(c,'''SELECT r.*,s.name source_name,s.manga_id,m.title manga_title FROM releases r JOIN sources s ON s.id=r.source_id JOIN manga m ON m.id=s.manga_id ORDER BY r.detected DESC,r.id DESC'''),'tasks':rows(c,'''SELECT t.release_id id,t.*,r.chapter,r.url,r.lang,s.name source_name,m.id manga_id,m.title manga_title FROM translation_tasks t JOIN releases r ON r.id=t.release_id JOIN sources s ON s.id=r.source_id JOIN manga m ON m.id=s.manga_id ORDER BY t.updated DESC,t.release_id DESC'''),'logs':rows(c,'SELECT l.*,s.name source_name FROM logs l LEFT JOIN sources s ON s.id=l.source_id ORDER BY l.id DESC LIMIT 100'),'refresh_mode':refresh_mode(c),'busy':LOCK.locked()}
+        return {'manga':rows(c,'SELECT * FROM manga ORDER BY title'),'sources':sources,'websites':website_registry(c),'releases':rows(c,'''SELECT r.*,s.name source_name,s.manga_id,m.title manga_title FROM releases r JOIN sources s ON s.id=r.source_id JOIN manga m ON m.id=s.manga_id ORDER BY r.detected DESC,r.id DESC'''),'tasks':rows(c,'''SELECT t.release_id id,t.*,r.chapter,r.url,r.lang,s.name source_name,m.id manga_id,m.title manga_title FROM translation_tasks t JOIN releases r ON r.id=t.release_id JOIN sources s ON s.id=r.source_id JOIN manga m ON m.id=s.manga_id ORDER BY t.updated DESC,t.release_id DESC'''),'logs':rows(c,'SELECT l.*,s.name source_name FROM logs l LEFT JOIN sources s ON s.id=l.source_id ORDER BY l.id DESC LIMIT 100'),'refresh_mode':refresh_mode(c),'busy':LOCK.locked()}
 
 EXPORT_COLUMNS={
     'manga':('id','title','aliases','raw_done','eng_done','th_done','translated','tracked'),
@@ -234,6 +252,9 @@ def restore_data(payload):
             raise ValueError('ข้อมูลตาราง '+table+' ไม่ถูกต้อง')
     if next((item['value'] for item in tables['settings'] if item['key']=='refresh_mode'),None) not in ('all','tracked'):
         raise ValueError('ค่าตั้งโหมดตรวจไม่ถูกต้อง')
+    website_setting=next((item['value'] for item in tables['settings'] if item['key']=='website_registry'),None)
+    if website_setting is not None:
+        parse_website_registry(website_setting)
     if not LOCK.acquire(blocking=False): raise ValueError('รอให้การตรวจสอบเสร็จก่อนนำเข้า')
     try:
         backup=DB.with_name(DB.name+'.pre-import-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')+'.bak')
@@ -286,6 +307,22 @@ def mutate(path,p):
             values=(int(p['manga_id']),required(p,'name'),url,kind,lang,max(30,min(1440,int(p.get('interval',60)))),int(bool(p.get('enabled',True))))
             if p.get('id'): c.execute('UPDATE sources SET manga_id=?,name=?,url=?,kind=?,lang=?,interval=?,enabled=?,checked=NULL WHERE id=?',(*values,int(p['id'])))
             else: c.execute('INSERT INTO sources(manga_id,name,url,kind,lang,interval,enabled) VALUES(?,?,?,?,?,?,?)',values)
+        elif path=='/api/website':
+            items=website_registry(c)
+            name=required(p,'name')[:150]; url=required(p,'url'); lang=required(p,'lang')
+            parsed=urlparse(url)
+            if parsed.scheme!='https' or not parsed.hostname or parsed.username or parsed.password or lang not in ('RAW','ENG','TH'):
+                raise ValueError('URL หรือภาษาเว็บไซต์ไม่ถูกต้อง')
+            url=url.rstrip('/')
+            if any(item['url']==url and item['id']!=p.get('id') for item in items): raise ValueError('เว็บไซต์นี้มีอยู่แล้ว')
+            if p.get('id'):
+                item=next((item for item in items if item['id']==int(p['id'])),None)
+                if not item: raise ValueError('ไม่พบเว็บไซต์')
+                item.update(name=name,url=url,lang=lang)
+            else:
+                if len(items)>=100: raise ValueError('เว็บไซต์เต็มจำนวน')
+                items.append(dict(id=max((item['id'] for item in items),default=0)+1,name=name,url=url,lang=lang,status='รอ Adapter และตรวจสิทธิ์'))
+            save_website_registry(c,items)
         elif path=='/api/release':
             s=c.execute('SELECT * FROM sources WHERE id=?',(int(p['source_id']),)).fetchone()
             if not s: raise ValueError('ไม่พบแหล่งข้อมูล')
@@ -294,6 +331,12 @@ def mutate(path,p):
             r=dict(chapter=normalize(required(p,'chapter')),title=str(p.get('title',''))[:500],url=url,published=None,lang=lang,external_id=url)
             save_release(c,s['id'],r)
         elif path=='/api/delete':
+            if p.get('type')=='website':
+                items=website_registry(c)
+                target=int(p['id'])
+                if not any(item['id']==target for item in items): raise ValueError('ไม่พบเว็บไซต์')
+                save_website_registry(c,[item for item in items if item['id']!=target])
+                return {'ok':True}
             table={'manga':'manga','source':'sources','release':'releases'}.get(p.get('type'))
             if not table: raise ValueError('ชนิดไม่ถูกต้อง')
             c.execute(f'DELETE FROM {table} WHERE id=?',(int(p['id']),))

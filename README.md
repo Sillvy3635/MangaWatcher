@@ -1,0 +1,51 @@
+# MangaWatcher — เว็บติดตามมังงะส่วนตัว
+
+MangaWatcher รวม metadata ตอนใหม่ของ Manga, Manhwa และ Manhua จากแหล่งที่ผู้ใช้เพิ่มเอง เปรียบเทียบ RAW / ENG / TH และจัดคิวงานแปล UI ภาษาไทยแบบ dark admin dashboard ใช้ React/TypeScript/Vite ส่วน backend local ใช้ Python 3.10+ และ SQLite ในเครื่อง โค้ด production เตรียม GitHub Pages + Netlify Functions + GitHub private JSON และ Actions แล้ว ดูขั้นตอนจริงใน [DEPLOYMENT.md](DEPLOYMENT.md) ไม่มีข้อมูลตัวอย่างปะปนกับข้อมูลจริง
+
+## เริ่มใช้งานบน Windows
+
+1. ติดตั้ง Python 3.10+ และ Node.js รุ่นที่รองรับ Vite (Node 20.19+ หรือ 22.12+)
+2. เปิด Terminal ใน `frontend/` แล้วรัน `npm ci` และ `npm run build`
+3. กลับโฟลเดอร์หลัก รัน `python server.py` หรือดับเบิลคลิก `START_WINDOWS.bat`
+4. เปิด `http://127.0.0.1:8765` หากเบราว์เซอร์ไม่เปิดเอง
+
+หากยังไม่ได้ build frontend โปรแกรมยังเปิด UI เดิมใน `web/` ได้ ข้อมูล SQLite ชุดเดียวกันถูกใช้ทั้งสอง UI สำหรับแก้หน้า React ระหว่างพัฒนา ให้เปิด Python server ก่อน แล้วรัน `npm run dev` ใน `frontend/` และเข้า URL ของ Vite ที่แสดง (proxy `/api` ไป local server)
+
+## ใช้งานหลัก
+
+- ไปที่ **มังงะทั้งหมด → เพิ่มเรื่อง** ใส่ชื่อและ alias คั่นด้วย `|` กำหนดว่าติดตามหรือไม่
+- ไปที่ **เว็บไซต์ต้นทาง → เพิ่มเว็บไซต์** เลือก MangaDex, RSS/Atom หรือเพิ่มตอนเอง ใส่ URL ที่ใช้ได้และได้รับอนุญาต พร้อมภาษาและรอบตรวจ 30–1440 นาที
+- ไปที่ **ตั้งค่าระบบ** เลือกตรวจทุกเรื่องที่ผูกแหล่งข้อมูล หรือเฉพาะเรื่องที่ติดตาม ปุ่มตรวจรายแหล่งยังใช้ได้เสมอ “ทุกเรื่อง” ไม่ได้หมายถึงค้นหาทั้งเว็บไซต์
+- หน้า **อัปเดตล่าสุด** แสดง release แยกตามแหล่งและภาษา หน้า **คิวงานแปล** บันทึก RAW, OCR, แปล, ตรวจคำ, ลงคำ, Publisher, เผยแพร่ แยกตาม release ID ตอน RAW ใหม่ของเรื่องที่ติดตามจะเข้าคิวอัตโนมัติ; ตอนเก่าหรือ ENG เพิ่มเข้าคิวได้จากหน้าอัปเดต ไม่มีการรวมตอนกำกวมข้ามเว็บอัตโนมัติ
+- ตารางมีค้นหาทันที จัดเรียง แบ่งหน้า เลือก/ปรับความกว้างคอลัมน์ และเก็บค่าหน้าจอใน localStorage หน้า **มังงะทั้งหมด/รายการติดตาม** เลือกหลายเรื่องเพื่อเปลี่ยนสถานะติดตามแบบธุรกรรมเดียว
+- หน้า **ฐานข้อมูล** ส่งออก JSON ครบทุกตาราง, ส่งออกตอน CSV และนำเข้า JSON schema 2; ก่อนนำเข้าโปรแกรมสำรอง SQLite เดิมเป็น `*.pre-import-*.bak` และใช้ transaction หากไฟล์ผิดรูปแบบข้อมูลเดิมจะไม่ถูกแทนที่
+
+## แหล่งข้อมูลและข้อจำกัด
+
+- MangaDex: ใช้ URL `https://mangadex.org/title/<UUID>` ตัว adapter เรียก feed API สูงสุด 100 รายการล่าสุดต่อครั้ง ไม่มีการดาวน์โหลดภาพ
+- RSS/Atom: ใช้ feed ที่เผยแพร่และอนุญาต รายการต้องมีชื่อเรื่องหรือ alias กับเลขตอนหลัง `Chapter`, `Ch`, `ตอน` หรือ `第` รูปแบบอื่นต้องมี adapter เฉพาะ
+- Manual: เพิ่ม URL ตอนเอง ไม่มีการดึงเว็บไซต์อัตโนมัติ
+- scheduler local ทำงานขณะเปิดโปรแกรม ตรวจแหล่งทีละรายการ หากผิดพลาดจะหน่วงรอบอัตโนมัติแบบ exponential backoff สูงสุด 1,440 นาที; ไม่รับประกันเวลาตรวจแน่นอน
+- ยังไม่มี URL เว็บไซต์ต้นทางจริงจากเจ้าของ จึงยังไม่มี HTML adapter เฉพาะเว็บ หรือการยืนยันผล live; เทสต์ adapter ใช้ fixture/mock เท่านั้น ไม่หลบ paywall, CAPTCHA หรือ access control
+- หน้า “ค้นหาเรื่องใหม่”, “การแจ้งเตือน” และสถานะ Actions แสดงข้อจำกัดตามจริง โค้ด GitHub Pages, OAuth, Netlify Functions, private JSON backend, PWA และ Actions/Python worker มีแล้วแต่ยังต้องยืนยัน deployment/บัญชี/อุปกรณ์จริง; Discord, Telegram, Push, IndexedDB sync และ offline data cache ยังไม่มี
+- Python local server ผูก `127.0.0.1` เท่านั้นและ **ไม่มี auth** ห้ามเปิดสู่ LAN/Internet ตรง ๆ; รายละเอียดเป้าหมาย cloud และข้อจำกัด GitHub Pages อยู่ใน [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) Supabase ไม่ใช่ข้อกำหนดหลัก
+- วิธีเปิดเว็บแบบ private ตั้งแต่ต้นจนจบอยู่ใน [DEPLOYMENT.md](DEPLOYMENT.md) Pages แสดง UI, Netlify ให้ API, private repo เก็บ JSON, Worker ตรวจ MangaDex/RSS ทุกชั่วโมงโดยประมาณ ปุ่มตรวจทันทีใน UI cloud ยังปิดอยู่
+- `npm audit` ยังรายงาน advisory ระดับ high ใน Vite/picomatch toolchain ที่ใช้ build/dev (ยังไม่มี picomatch รุ่นแก้ใน registry ณ วันที่ตรวจ) เปิด Vite dev server เฉพาะ loopback และตรวจอัปเดต dependency ก่อนเปิด cloud
+
+## ข้อมูลเดิมและการย้อนกลับ
+
+โปรแกรมใช้ `data/mangawatcher.sqlite3` หรือ `data/mangapulse.sqlite3` เดิมหากยังไม่มีชื่อใหม่ ก่อน migration ตาราง `settings` หรือ `translation_tasks` จะสร้างไฟล์ `*.pre-settings-*.bak` หรือ `*.pre-tasks-*.bak` ใน `data/` หากต้องย้อนกลับ ให้ปิดโปรแกรม คัดลอกไฟล์สำรองที่ต้องการทับฐานข้อมูลที่ใช้งาน แล้วเปิดใหม่ เก็บ SQLite, JSON export และ `.bak` เป็นส่วนตัว อย่านำเข้าคอมมิตหรืออัปโหลดสาธารณะ
+
+## ทดสอบ
+
+```text
+python -m unittest discover -s tests -v
+node --check web/app.js
+node --test cloud/cloud.test.mjs
+cd frontend
+npm ci
+npm run build
+npm run lint
+```
+
+ตรวจ HTTP แบบ local ได้ด้วย `python server.py --no-browser --no-scheduler` แล้วเปิด `/api/state` หรือ `/api/export` ไม่มีเทสต์ที่ยิงเว็บต้นทางจริง อุปกรณ์ Android/iPhone จริงและการติดตั้ง PWA/offline ยังไม่ได้ยืนยัน PWA เก็บเฉพาะไฟล์หน้าเว็บ ไม่เก็บข้อมูลมังงะ/API ส่วนตัว

@@ -1,0 +1,19 @@
+# MangaWatcher — repository instructions
+
+## Goal
+Build a private-first manga/manhwa/manhua metadata update aggregator for a Thai-speaking translator. Track RAW (KR/JP/ZH), ENG, TH across multiple sources; compare chapter availability and personal translation progress. Use Thai UI and clear, concise documentation. Primary targets: desktop Windows, Android, iPhone. Prefer low-cost/free-tier infrastructure where practical; do not promise perpetual free service.
+
+## Existing implementation
+- Local backend: Python 3.10+ standard library, SQLite, loopback port 8765. `python server.py` or START_WINDOWS.bat. It serves `frontend/dist` when built and falls back to the original `web/` UI otherwise.
+- New frontend: `frontend/` React, TypeScript, Vite, Tailwind CSS, shadcn/ui components and Lucide icons. Run `npm ci`, `npm run build` in that directory. The build is ignored by Git. Vite development proxy targets the local Python API.
+- MangaDex feed, RSS/Atom and manual sources; explicit source-to-manga mapping, aliases, release deduplication, local scheduler, RAW release translation tasks, JSON backup/import, CSV export in UI, and local table preferences. No real source list supplied by owner yet.
+- Production preparation includes GitHub Pages build/PWA, cross-origin Netlify API with GitHub OAuth and owner-restricted app session, private GitHub JSON store, `cloud_worker.py`, `.github/workflows/deploy.yml` and `manga-update.yml`. See `DEPLOYMENT.md`. Mock tests passed; live deployment/account/mobile checks remain necessary. Cloud notifications are absent. Supabase is not a required target. Never present unimplemented menu entries as connected features.
+- Read README.md and ROADMAP.md; inspect actual source/tests before changes. Preserve existing features and database data; legacy MangaPulse database fallback is intentional.
+
+## Development rules
+- Prefer small testable increments. Do not rewrite working components without a reason or delete local data. Use migrations, backups and rollback plans for schema changes.
+- Never commit API keys, service-role credentials, real user SQLite data or .env. Provide .env.example for cloud work. Keep privileged operations server-side and enforce RLS/auth before multi-user/public access. Local HTTP server is not for public exposure.
+- Track metadata and source URLs only; no chapter image downloads, paywall bypass, CAPTCHA evasion or access-control bypass. Prefer authorized APIs and RSS; respect terms, rate limits, retries/backoff. For user-configured URLs, prevent SSRF including redirects, DNS rebinding and private networks before any public deployment. Clearly distinguish fixture/demo data from verified live data.
+- Keep chapter releases separate per source/language; normalize decimal chapters, support specials/parts/seasons, don't silently merge ambiguous matches. Preserve timestamps and source provenance.
+- Test with `python -m unittest discover -s tests -v`, `node --check web/app.js`, `node --test cloud/cloud.test.mjs`, `npm run build`, and `npm run lint` in `frontend/`. Add deterministic tests for each adapter and regression. Mock external network calls in automated tests; explicitly report what was not verified live. Report commands and results, changes and blockers.
+- Do not deploy, create paid resources or publish a repository without owner approval. The owner's current request explicitly authorizes production deployment of the named repositories, but does not authorize inventing credentials or creating paid resources. Keep setup instructions in Thai and update README and ROADMAP as work changes.

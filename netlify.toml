@@ -1,0 +1,11 @@
+[build]
+  command = "node --check netlify/functions/api.mjs"
+  publish = "netlify/public"
+  functions = "netlify/functions"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "DENY"

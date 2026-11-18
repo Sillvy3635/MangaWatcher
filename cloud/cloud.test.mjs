@@ -28,6 +28,7 @@ test('website registry is separate from per-series sources and survives schema 2
   assert.equal(toState(data).sources.length, 0)
   assert.equal(toState(data).websites[0].status, 'รอ Adapter และตรวจสิทธิ์')
   assert.throws(() => applyMutation(data, 'website', { name: 'Duplicate', url: 'https://example.org/catalog', lang: 'ENG' }))
+  assert.throws(() => applyMutation(data, 'website', { name: 'Duplicate slash', url: 'https://example.org/catalog/', lang: 'ENG' }))
   assert.throws(() => applyMutation(data, 'website', { name: 'Unsafe', url: 'http://example.org/catalog', lang: 'ENG' }))
   applyMutation(data, 'website', { id: 1, name: 'Renamed', url: 'https://example.org/catalog', lang: 'TH' })
   assert.equal(toState(data).websites[0].lang, 'TH')

@@ -34,8 +34,10 @@ const websiteRegistry = snapshot => {
   if (!Array.isArray(items) || items.length > 100) fail('รายการเว็บไซต์ไม่ถูกต้อง')
   const ids = new Set(), urls = new Set()
   for (const item of items) {
-    if (!item || typeof item !== 'object' || Array.isArray(item) || Object.keys(item).sort().join('|') !== 'id|lang|name|status|url' || !Number.isSafeInteger(item.id) || item.id < 1 || typeof item.name !== 'string' || !item.name.trim() || item.name.length > 150 || !LANGS.has(item.lang) || item.lang === 'ALL' || typeof item.status !== 'string' || item.status.length > 150 || !metadataUrl(item.url) || new URL(item.url).protocol !== 'https:' || ids.has(item.id) || urls.has(item.url)) fail('รายการเว็บไซต์ไม่ถูกต้อง')
-    ids.add(item.id); urls.add(item.url)
+    if (!item || typeof item !== 'object' || Array.isArray(item) || Object.keys(item).sort().join('|') !== 'id|lang|name|status|url' || !Number.isSafeInteger(item.id) || item.id < 1 || typeof item.name !== 'string' || !item.name.trim() || item.name.length > 150 || !LANGS.has(item.lang) || item.lang === 'ALL' || typeof item.status !== 'string' || item.status.length > 150 || !metadataUrl(item.url) || new URL(item.url).protocol !== 'https:' || ids.has(item.id)) fail('รายการเว็บไซต์ไม่ถูกต้อง')
+    const canonical = new URL(item.url).href.replace(/\/$/, '')
+    if (urls.has(canonical)) fail('รายการเว็บไซต์ไม่ถูกต้อง')
+    ids.add(item.id); urls.add(canonical)
   }
   return items
 }
@@ -115,9 +117,9 @@ export function applyMutation(snapshot, action, payload) {
     t.settings.find(row => row.key === 'refresh_mode').value = payload.refresh_mode
   } else if (action === 'website') {
     const items = websiteRegistry(snapshot)
-    const name = text(payload.name, 150), siteUrl = url(payload.url), lang = text(payload.lang)
+    const name = text(payload.name, 150), siteUrl = url(payload.url).replace(/\/$/, ''), lang = text(payload.lang)
     if (!name || !LANGS.has(lang) || lang === 'ALL') fail('ชื่อหรือภาษาเว็บไซต์ไม่ถูกต้อง')
-    if (items.some(item => item.url === siteUrl && item.id !== Number(payload.id))) fail('เว็บไซต์นี้มีอยู่แล้ว')
+    if (items.some(item => new URL(item.url).href.replace(/\/$/, '') === siteUrl && item.id !== Number(payload.id))) fail('เว็บไซต์นี้มีอยู่แล้ว')
     if (payload.id) {
       const item = items.find(row => row.id === id(payload.id))
       if (!item) fail('ไม่พบเว็บไซต์', 404)

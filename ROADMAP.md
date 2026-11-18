@@ -22,7 +22,7 @@
 - ทำแล้วในโค้ด: GitHub private JSON store ผ่าน server-only token, commit ต่อ mutation, SHA conflict, export/import แบบตรวจรุ่น, ใช้ JSON schema 2 ที่ local export ได้; จำกัดไฟล์ 900 KB ตามรูปแบบ Contents API ที่ใช้ และเก็บประวัติ commit ไว้กู้คืน
 - ยังเหลือ: ตั้งค่า Netlify site/OAuth/private repo/secret ในบัญชีเจ้าของ, deploy และทดสอบจริงบน PC/Android/iPhone, แยกข้อมูลเมื่อโตเกิน 900 KB, ทดสอบ conflict/live recovery, ตรวจโควตาและค่าใช้จ่ายจริง
 - ทำแล้วในโค้ด: `deploy.yml` สำหรับ Pages และ `manga-update.yml` ทุก 60 นาทีสำหรับ MangaDex/RSS ที่ผู้ใช้กำหนด, HTTPS พร้อม DNS pinning/ปฏิเสธ private network และ redirect, GET retry, backoff ตามแหล่ง, dedup release, batch commit หลังตรวจ; ยังไม่ทดสอบ live/Actions จริง และยังไม่มี notification idempotency
-- 18 พฤศจิกายน 2026: push โค้ดชุดแรกขึ้น `Sillvy3635/MangaWatcher` แล้ว (`c7933a2`); GitHub Actions รอบแรกหยุดที่การตรวจ `MW_API_ORIGIN` เพราะยังไม่มี URL Netlify Site ตั้งค่า Production ยังต้องทำต่อก่อนถือว่าออนไลน์
+- 18 พฤศจิกายน 2026: push โค้ดขึ้น `Sillvy3635/MangaWatcher` แล้ว (`57106da`); GitHub Actions รอบล่าสุด #44303510719 หยุดที่การตรวจ `MW_API_ORIGIN` เพราะยังไม่มี URL Netlify Site ในการตั้งค่า Pages URL ยังตอบ 404 ต้องตั้งค่า Production ก่อนถือว่าออนไลน์
 - 18 พฤศจิกายน 2026: เริ่ม private repo `Sillvy3635/MangaWatcher-Data` ด้วย README และ `.gitignore` เท่านั้น (`ba74ec7`); รอนำเข้า JSON schema 2 จากข้อมูลจริงหลัง API พร้อม
 - Discord/Telegram แจ้งเตือนด้วย idempotency; Push ภายหลังเมื่อ auth, browser support และ device QA ผ่าน ไม่ใส่ secret ใน frontend
 

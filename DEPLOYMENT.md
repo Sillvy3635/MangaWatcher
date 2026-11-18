@@ -4,7 +4,7 @@
 
 > สถานะเอกสาร: ไฟล์ build/API/Worker ผ่านการทดสอบด้วย mock ในเครื่อง การ deploy และการทดสอบบัญชีจริงต้องทำตามขั้นตอนนี้หลังตั้งค่า Netlify และ GitHub ที่เจ้าของควบคุม ค่าใช้จ่าย 0 บาท/เดือนเป็นเป้าหมายภายในโควตาฟรีของบัญชีจริง ไม่ใช่คำรับประกัน
 
-โค้ดถูก push ขึ้น public repository แล้วที่ commit `57106da` และ private data repository มี commit เริ่มต้น `ba74ec7` Workflow Pages รอบล่าสุด [#44303510719](https://github.com/Sillvy3635/MangaWatcher/actions/runs/44303510719) หยุดที่ขั้นตรวจ `MW_API_ORIGIN` ตามที่ตั้งใจไว้ เพื่อไม่เผยแพร่ frontend ที่ชี้ API ผิด จัด Netlify Site และตั้ง variable นี้ก่อนกด Run workflow อีกครั้ง ขณะตรวจ URL ของ Pages ยังตอบ HTTP 404
+โค้ดถูก push ขึ้น public repository แล้ว และ private data repository มี commit เริ่มต้น `ba74ec7` Netlify Site จริงคือ `https://mangawatcher.netlify.app` โดยหน้า API placeholder ตอบ HTTP 200 และ `/api/session` ตอบ HTTP 503 พร้อมข้อความว่า `ยังไม่ตั้งค่า site origin` จนกว่าจะกำหนด environment variables ด้านล่าง Workflow Pages [#44303510719](https://github.com/Sillvy3635/MangaWatcher/actions/runs/44303510719) หยุดที่ขั้นตรวจ `MW_API_ORIGIN` ตามที่ตั้งใจไว้ ขณะตรวจ URL ของ Pages ยังตอบ HTTP 404
 
 ## 1. เตรียมข้อมูลเดิม
 
@@ -27,13 +27,13 @@ git ls-remote origin main
 
 ## 3. สร้าง Netlify API Site
 
-ใน Netlify เลือก **Add new project → Import an existing project → GitHub → Sillvy3635/MangaWatcher** ภาพที่แจ้งว่า repository ว่างจะหายหลัง push โค้ด ตั้ง branch `main`, base directory ว่าง, build/publish ใช้ `netlify.toml` ที่ root (`publish = netlify/public`, `functions = netlify/functions`) Netlify site นี้ให้บริการ API เท่านั้น หน้าเว็บหลักอยู่บน Pages
+Netlify Site `mangawatcher` สร้างแล้วจาก **Sillvy3635/MangaWatcher** branch `main` โดยใช้ `netlify.toml` ที่ root (`publish = netlify/public`, `functions = netlify/functions`) และเผยแพร่ที่ `https://mangawatcher.netlify.app/` Site นี้ให้บริการ API เท่านั้น หน้าเว็บหลักอยู่บน Pages
 
-บันทึก HTTPS URL ของ site เช่น `https://<site-name>.netlify.app` โดยยังไม่สมมติชื่อจริง เปิด **Site configuration → Environment variables** แล้วตั้งค่า:
+เปิด [Environment variables](https://app.netlify.com/projects/mangawatcher/configuration/env) ของ Netlify Site จริง แล้วตั้งค่า:
 
 | ตัวแปร | ค่า / ตำแหน่งที่ได้ |
 | --- | --- |
-| `MW_SITE_ORIGIN` | HTTPS origin ของ Netlify site ตรงตัว ไม่มี `/` ท้าย |
+| `MW_SITE_ORIGIN` | `https://mangawatcher.netlify.app` ไม่มี `/` ท้าย |
 | `MW_FRONTEND_ORIGIN` | `https://sillvy3635.github.io` |
 | `MW_FRONTEND_BASE_PATH` | `/MangaWatcher/` |
 | `MW_GITHUB_CLIENT_ID` | Client ID จาก OAuth App ในขั้น 4 |
@@ -50,7 +50,7 @@ git ls-remote origin main
 
 ## 4. ตั้ง GitHub OAuth
 
-ที่ GitHub บัญชี `Sillvy3635` ไป **Settings → Developer settings → OAuth Apps → New OAuth App** ตั้งชื่อ MangaWatcher, Homepage URL เป็น `https://sillvy3635.github.io/MangaWatcher/`, Authorization callback URL เป็น `https://<site-name>.netlify.app/api/auth/callback` จาก Netlify Site จริง คัดลอก Client ID/secret ไปตั้งใน Netlify ขั้น 3 OAuth ขอ `read:user` เพื่อยืนยัน numeric user ID เท่านั้น GitHub access token ไม่ถูกส่งไป browser
+ที่ GitHub บัญชี `Sillvy3635` ไป **Settings → Developer settings → OAuth Apps → New OAuth App** ตั้งชื่อ MangaWatcher, Homepage URL เป็น `https://sillvy3635.github.io/MangaWatcher/`, Authorization callback URL เป็น `https://mangawatcher.netlify.app/api/auth/callback` คัดลอก Client ID/secret ไปตั้งใน Netlify ขั้น 3 OAuth ขอ `read:user` เพื่อยืนยัน numeric user ID เท่านั้น GitHub access token ไม่ถูกส่งไป browser
 
 ## 5. ให้สิทธิ์ private data repository
 
@@ -58,7 +58,7 @@ git ls-remote origin main
 
 ## 6. เปิด GitHub Pages
 
-ที่ public repository ไป **Settings → Pages → Build and deployment → Source: GitHub Actions** จากนั้นไป **Settings → Secrets and variables → Actions → Variables** เพิ่ม `MW_API_ORIGIN` เป็น Netlify HTTPS origin ของขั้น 3 ค่า URL นี้เปิดเผยใน frontend ได้เพราะเป็นเพียง API address แล้วเปิด **Actions → Deploy MangaWatcher Pages → Run workflow** หรือ push commit ใหม่ Workflow `deploy.yml` ติดตั้ง dependencies, lint, build ด้วย `VITE_BASE_PATH=/MangaWatcher/`, สร้าง PWA/404 fallback และเผยแพร่ `frontend/dist` เมื่อผ่านแล้วเปิด `https://sillvy3635.github.io/MangaWatcher/`
+ที่ public repository ไป **Settings → Pages → Build and deployment → Source: GitHub Actions** จากนั้นไป **Settings → Secrets and variables → Actions → Variables** เพิ่ม `MW_API_ORIGIN` เป็น `https://mangawatcher.netlify.app` ค่า URL นี้เปิดเผยใน frontend ได้เพราะเป็นเพียง API address แล้วเปิด **Actions → Deploy MangaWatcher Pages → Run workflow** หรือ push commit ใหม่ Workflow `deploy.yml` ติดตั้ง dependencies, lint, build ด้วย `VITE_BASE_PATH=/MangaWatcher/`, สร้าง PWA/404 fallback และเผยแพร่ `frontend/dist` เมื่อผ่านแล้วเปิด `https://sillvy3635.github.io/MangaWatcher/`
 
 Route ของหน้าเว็บใช้ `?view=queue` เป็นต้น จึง refresh แล้วไม่เจอ 404; `404.html` จะส่ง URL แบบ path กลับไป query route หากมี deep link เก่า ตัว service worker cache เฉพาะ static shell/assets ตาม build hash ไม่ cache API หรือ JSON ส่วนตัว
 

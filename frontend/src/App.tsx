@@ -41,6 +41,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { MonthlyCalendar } from "./MonthlyCalendar";
 import { api, ApiError, clearSession, cloudMode, getState, importSnapshot, loginUrl } from "./api";
 import {
   emptyState,
@@ -1234,20 +1235,13 @@ function App() {
                 </p>
               </>,
             )}
-          {page === "calendar" &&
-            section(
-              "ประวัติการอัปเดตตามวัน",
-              <>
-                <p className="section-note">
-                  แสดงวันที่ตรวจพบจริงจากฐานข้อมูล ไม่คาดการณ์วันปล่อยตอน
-                </p>
-                <DenseTable
-                  id="calendar"
-                  rows={data.releases}
-                  columns={releaseColumns}
-                />
-              </>,
-            )}
+          {page === "calendar" && <MonthlyCalendar
+            releases={data.releases}
+            manga={data.manga}
+            sources={data.sources}
+            tasks={data.tasks}
+            onRefresh={load}
+          />}
           {page === "sources" && (
             <>
               {section(

@@ -6,6 +6,8 @@ MangaWatcher รวม metadata ตอนใหม่ของ Manga, Manhwa แ
 
 หน้า **เว็บไซต์ต้นทาง** แยกทะเบียนเว็บไซต์ออกจากแหล่งรายเรื่องแล้ว เพิ่ม/แก้ไข/ลบเว็บไซต์ได้โดยไม่ต้องสร้างเรื่องจำลอง ทะเบียนนี้เป็น metadata เท่านั้น; การเพิ่มเว็บไซต์ไม่เริ่มตรวจอัตโนมัติ Asura Scans ถูกลงทะเบียนใน private JSON เป็นสถานะรอ Adapter และตรวจสิทธิ์ เนื่องจากคำขออัตโนมัติปัจจุบันได้รับ HTTP 403 challenge
 
+แหล่ง metadata ที่ตรวจสอบช่องทางทางการแล้ว เช่น MangaDex API และ MangaUpdates API พร้อมข้อจำกัดและสถานะการเชื่อมต่อ ดู [docs/ALLOWED_METADATA_SOURCES.md](docs/ALLOWED_METADATA_SOURCES.md) ปัจจุบันยังไม่มี source รายเรื่องที่เปิดตรวจอัตโนมัติใน private data
+
 ## เริ่มใช้งานบน Windows
 
 1. ติดตั้ง Python 3.10+ และ Node.js รุ่นที่รองรับ Vite (Node 20.19+ หรือ 22.12+)

@@ -34,6 +34,8 @@
 - 19 พฤศจิกายน 2026: นำประวัติ Asura จาก tracker เดิม 52 key (URL หลายรุ่น) มาคัดรายการล่าสุดตาม Git commit ของแต่ละชื่อเรื่อง เหลือ 6 เรื่อง/6 แหล่ง/6 ตอนใน private JSON เดิม ไม่ทับข้อมูลเดิม ตั้งเป็น manual/disabled/ไม่ติดตามและติดป้ายยังไม่ตรวจสด; ไม่ใช่แค็ตตาล็อกปัจจุบันของ Asura และยังไม่มี Adapter ที่ได้รับอนุญาต
 
 - 19 พฤศจิกายน 2026: ตรวจช่องทางทางการของ MangaDex API, MangaUpdates API และ RSS ของ WEBTOON EN; บันทึกหลักฐาน/ข้อจำกัดใน `docs/ALLOWED_METADATA_SOURCES.md` ยังไม่ผูก ID เรื่องหรือเปิด source อัตโนมัติ เพราะต้องยืนยันการจับคู่และปรับ parser เฉพาะแหล่งก่อน
+
+- 19 พฤศจิกายน 2026: ตรวจ MangaBaka API และ data license; ใช้เป็น candidate สำหรับค้นหาเรื่อง/alias mapping เท่านั้น ไม่ใช้เลขตอน catalog เป็น release จากเว็บต้นทาง ข้อมูล `source` จากผู้ให้บริการอื่นต้องเคารพสิทธิ์แยก และผลค้นหาชื่อเดียวอาจมีหลายระเบียน
 - Discord/Telegram แจ้งเตือนด้วย idempotency; Push ภายหลังเมื่อ auth, browser support และ device QA ผ่าน ไม่ใส่ secret ใน frontend
 
 ## Phase 3 — ประสบการณ์ผู้ใช้และข้อมูลขั้นสูง (ทำบางส่วน)

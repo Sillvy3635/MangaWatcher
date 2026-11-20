@@ -13,6 +13,8 @@
 
 สำหรับ [Asura Scans](https://asurascans.com/terms-of-service) ข้อกำหนดระบุว่าห้าม scrape/copy โดยไม่ได้รับอนุญาต, `/feed` และ `/rss.xml` ตอบ 404 และคำขออัตโนมัติหน้าเว็บที่ทดสอบก่อนหน้านี้ได้ HTTP 403 จึงไม่เปิด HTML adapter หรือข้ามการป้องกัน ต้องได้รับสิทธิ์จากเว็บหรือช่องทาง feed/API ที่เขาอนุญาตก่อน ส่วน Vortex Scans และ Kakao Page ยังไม่มี API/RSS ที่ยืนยันการใช้งานสำหรับโครงการนี้ จึงคงเป็น manual/disabled
 
+[O Translations (OTL)](https://otl.moe/) เป็นเว็บไซต์แปลภาษาอังกฤษที่ลงทะเบียนไว้ใน private Source Manager เป็น metadata เท่านั้น [ข้อกำหนดของเว็บ](https://otl.moe/terms/) ห้าม scrape/mirror/re-upload ผลงานโดยไม่ได้รับอนุญาต; ตรวจวันที่ 20 พฤศจิกายน 2026 พบว่า `/feed/` และ `/rss.xml` ตอบ 404 และ [`robots.txt`](https://otl.moe/robots.txt) ปิด `/api/` ยังไม่พบ API/RSS ที่เผยแพร่ให้ใช้กับ MangaWatcher จึงไม่สร้าง adapter, ไม่อ่าน HTML อัตโนมัติ และไม่เพิ่มเรื่องหรือตอนสมมติ หากเว็บให้สิทธิ์หรือเผยแพร่ feed ที่อนุญาตภายหลังจึงตรวจอีกครั้ง
+
 **ขั้นตอนก่อนเปิดตรวจ:** ผูก ID เรื่องกับแหล่งใหม่ทีละเรื่องโดยให้ผู้ใช้ยืนยัน, ตรวจว่าข้อมูลภาษาและตอนสอดคล้องกับแหล่งนั้น, เพิ่ม attribution ที่ UI, ทดสอบ adapter ด้วย fixture และคำขอสดที่อนุญาต, จำกัดอัตรา/จัดการ 429, แล้วจึงเปิด source ใน private JSON อย่างชัดเจน ห้ามตีความว่าเลขตอนจาก MangaDex/MangaUpdates/WEBTOON คือเลขตอนล่าสุดของ Asura หรือเว็บต้นทางอื่นโดยอัตโนมัติ
 
 MangaBaka เป็น **แหล่ง catalog** ไม่ใช่ source สำหรับ release scheduler: ใช้ ID mapping และ title aliases ได้ แต่ `total_chapters` หรือ `last_updated_at` ของ catalog ไม่ยืนยันเลขตอนล่าสุดของเว็บใด การค้นหา “The Regressor and the Blind Saint” ผ่าน API ได้ 2 ระเบียน จึงห้ามจับคู่กับเรื่องเดิมแบบอัตโนมัติ

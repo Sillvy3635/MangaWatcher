@@ -43,6 +43,7 @@
 - 20 พฤศจิกายน 2026: เพิ่ม Discord Webhook ใน Worker พร้อม private outbox ของ release ID, ส่งหลัง commit ข้อมูลสำเร็จ, ยืนยันด้วย `wait=true`, retry เมื่อ 429/5xx, ปิดการ mention, และ manual `test_discord` ที่แยกจากตอนจริง รอเจ้าของตั้ง GitHub Secret และทดสอบข้อความถึงช่องจริง การรันซ้ำปกติไม่ส่งซ้ำ แต่หาก Worker หยุดหลัง Discord รับข้อความก่อนบันทึก receipt อาจส่งซ้ำหนึ่งชุดได้
 - 20 พฤศจิกายน 2026: Secret ถูกตั้งแล้วแต่รอบทดสอบและรอบตามเวลาแรกพบรูปแบบ Discord Webhook URL ไม่ถูกต้อง กำลังให้เจ้าของแก้ค่า Secret; ปรับ Worker ให้รอบตรวจมังงะดำเนินต่อและคิวแจ้งเตือนคงอยู่แม้ Secret ผิด ต้องทดสอบข้อความจริงซ้ำก่อนถือว่าเชื่อมสำเร็จ
 - 20 พฤศจิกายน 2026: เจ้าของแก้ Secret แล้ว ทดสอบ Discord live ผ่าน [GitHub Actions run #44668209908](https://github.com/Sillvy3635/MangaWatcher/actions/runs/44668209908) โดย Worker รายงาน `discord_test: sent` และ Discord ตอบกลับพร้อม message ID (`checked: 0`, `new: 0`); ยังไม่พบตอนใหม่จริงให้ตรวจการแจ้งเตือน release
+- 20 พฤศจิกายน 2026: ลงทะเบียน O Translations (`https://otl.moe`) เป็นเว็บไซต์ ENG ใน private `website_registry` เท่านั้น ไม่เพิ่มเรื่องหรือตอนและไม่เปิดตรวจอัตโนมัติ `/feed/` และ `/rss.xml` ตอบ 404, `robots.txt` ปิด `/api/`, ข้อกำหนดห้าม scrape ผลงานโดยไม่ได้รับอนุญาต รอช่องทางหรือสิทธิ์จากเว็บก่อนทำ Adapter
 - ยังเหลือ: สังเกตการแจ้งเตือนตอนใหม่จริง, Telegram, Push, และการลดช่องว่าง duplicate กรณี Worker หยุดกลางขั้นตอนยืนยัน
 
 ## Phase 3 — ประสบการณ์ผู้ใช้และข้อมูลขั้นสูง (ทำบางส่วน)

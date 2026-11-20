@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from unittest.mock import patch
 
 import cloud_worker
+import server
 from server import rss_parse, select_feed_updates
 from site_feeds import feed_urls, parse_site_feed, series_feed
 
@@ -80,6 +81,15 @@ class SiteFeedTests(unittest.TestCase):
         self.assertEqual(result, {'checked': 2, 'new': 0})
         self.assertEqual(len(calls), 6)
         self.assertEqual({row['chapter'] for row in snapshot['tables']['releases']}, {'21', '5'})
+
+    def test_local_adapter_reuses_feed_within_one_refresh(self):
+        source = {'url': 'https://en-thunderscans.com/comics/survivalism', 'lang': 'ENG',
+                  'kind': 'site_feed', 'manga_title': 'Survivalism', 'aliases': ''}
+        cache = {}
+        with patch.object(server, 'fetch', return_value=feed()) as request:
+            server.check_source(source, cache)
+            server.check_source(source, cache)
+        self.assertEqual(request.call_count, 6)
 
 
 if __name__ == '__main__':

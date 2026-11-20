@@ -195,17 +195,21 @@ def check_mangadex(s):
 def check_rss(s):
     return rss_parse(fetch(s['url']),s)
 
-def check_site_feed(s):
+def check_site_feed(s, cache=None):
+    cache = {} if cache is None else cache
     found={}
     for url in feed_urls(s):
-        for item in parse_site_feed(fetch(url),s,rss_parse):
+        if url not in cache:
+            cache[url]=fetch(url)
+        for item in parse_site_feed(cache[url],s,rss_parse):
             found[item['external_id']]=item
     return list(found.values())
 
 # Register an adapter only after its source format and permission are verified.
 ADAPTERS={'mangadex':check_mangadex,'rss':check_rss,'site_feed':check_site_feed}
-def check_source(s):
+def check_source(s, site_cache=None):
     if s['kind'] not in ADAPTERS: raise ValueError('แหล่งข้อมูลแบบกำหนดเองต้องเพิ่มตอนด้วยตัวเอง')
+    if s['kind']=='site_feed': return check_site_feed(s, site_cache)
     return ADAPTERS[s['kind']](s)
 
 def save_release(c,sid,r):
@@ -224,6 +228,7 @@ def refresh(sid=None, due=False, mode=None):
             mode=mode or refresh_mode(c)
             if mode not in ('all','tracked'): raise ValueError('โหมดตรวจสอบไม่ถูกต้อง')
             sources=rows(c,'''SELECT s.*,m.title manga_title,m.aliases,m.tracked FROM sources s JOIN manga m ON m.id=s.manga_id WHERE s.enabled=1 AND s.kind!='manual' '''+('AND s.id=?' if sid else 'AND (?=\'all\' OR m.tracked=1)'),(sid,) if sid else (mode,))
+        site_cache={}
         for s in sources:
             if due and s['checked']:
                 with db() as c: wait=retry_minutes(c,s['id'],s['interval'])
@@ -231,7 +236,7 @@ def refresh(sid=None, due=False, mode=None):
                 except ValueError: elapsed=wait*60
                 if elapsed<wait*60: continue
             try:
-                incoming=check_source(s)
+                incoming=check_source(s,site_cache)
                 with db() as c:
                     existing=rows(c,'SELECT lang,published,chapter FROM releases WHERE source_id=?',(s['id'],))
                     selected,baseline=select_feed_updates(incoming,existing,s['checked'] is None,s['kind'])

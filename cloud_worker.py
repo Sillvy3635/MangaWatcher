@@ -236,14 +236,22 @@ def main():
     test_discord = env.get('MW_DISCORD_TEST', '').lower() == 'true'
     if test_discord and not webhook:
         raise ValueError('ยังไม่ได้ตั้ง MW_DISCORD_WEBHOOK_URL ใน GitHub Actions Secrets')
+    webhook_valid = False
     if webhook:
-        webhook_endpoint(webhook)
+        try:
+            webhook_endpoint(webhook)
+            webhook_valid = True
+        except ValueError:
+            if test_discord:
+                raise ValueError('Discord Webhook URL ไม่ถูกต้อง: ใส่ URL อย่างเดียวจาก Server Settings > Integrations > Webhooks') from None
     snapshot, sha = read_store(env)
     result = process_snapshot(snapshot, notify_enabled=bool(webhook))
     if result['checked']:
         write_store(env, snapshot, sha)
-    if webhook:
+    if webhook_valid:
         result['discord_sent'] = deliver_pending(env, webhook, snapshot, read_store, write_store, request_bytes)
+    elif webhook:
+        result['discord'] = 'invalid_webhook_secret; pending notifications retained'
     if test_discord:
         post_message(webhook, '🧪 MangaWatcher: ทดสอบการเชื่อมต่อ Discord สำเร็จ (ไม่มีข้อมูลตอนจำลอง)', request_bytes)
         result['discord_test'] = 'sent'

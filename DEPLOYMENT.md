@@ -72,11 +72,13 @@ Route ของหน้าเว็บใช้ `?view=queue` เป็นต�
 ### ตั้งค่าการแจ้งเตือน Discord
 
 1. ใน Discord Server ที่คุณดูแล ไป **Server Settings → Integrations → Webhooks → Create Webhook** เลือกช่องข้อความสำหรับ MangaWatcher แล้วคัดลอก Webhook URL เก็บไว้ส่วนตัว ([คู่มือ Discord](https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks))
-2. เปิด [Actions Secrets ของ MangaWatcher](https://github.com/Sillvy3635/MangaWatcher/settings/secrets/actions) → **New repository secret** ตั้งชื่อ `MW_DISCORD_WEBHOOK_URL` และวาง Webhook URL เป็นค่า Secret ใน **public code repository** ที่รัน `manga-update.yml` อย่าใส่ใน Actions Variables, Netlify, `.env`, private JSON หรือ frontend และไม่ต้องส่ง URL ในแชต ([คู่มือ GitHub](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets?tool=webui))
+2. เปิด [Actions Secrets ของ MangaWatcher](https://github.com/Sillvy3635/MangaWatcher/settings/secrets/actions) → **New repository secret** ตั้งชื่อ `MW_DISCORD_WEBHOOK_URL` และวาง **URL อย่างเดียว** รูปแบบ `https://discord.com/api/webhooks/<ตัวเลข-ID>/<token>` เป็นค่า Secret ใน **public code repository** ที่รัน `manga-update.yml` อย่าใส่ `MW_DISCORD_WEBHOOK_URL=` นำหน้า, เครื่องหมายคำพูด, ลิงก์ช่อง/Invite, Actions Variables, Netlify, `.env`, private JSON หรือ frontend และไม่ต้องส่ง URL ในแชต ([คู่มือ GitHub](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets?tool=webui))
 3. ไป [Actions → Update manga metadata](https://github.com/Sillvy3635/MangaWatcher/actions/workflows/manga-update.yml) → **Run workflow** เลือก `test_discord: true` แล้วรอผล `discord_test: sent` ใน log กับข้อความ “ทดสอบการเชื่อมต่อ” ในช่อง Discord ข้อความนี้ระบุว่าเป็นการทดสอบและไม่มีตอนจำลอง หากยังไม่ตั้ง Secret การรันแบบทดสอบจะล้มเหลวพร้อมข้อความแจ้งตรง ๆ
 4. หลังทดสอบ ให้ใช้ค่า `test_discord: false` หรือปล่อยให้รันตามเวลา ระบบจะส่งเฉพาะ release ใหม่ของเรื่องที่ติดตามหลังการตรวจครั้งแรกของแหล่งนั้นและเมื่อ Worker บันทึก private JSON สำเร็จ รอบที่ไม่มีตอนใหม่จะไม่ส่งข้อความ คิว `settings.discord_outbox` เก็บเพียง release ID ของข้อความที่ยังไม่ยืนยันและลองใหม่ในรอบถัดไปเมื่อ Discord ตอบผิดพลาด `429` จะรอตาม `retry_after`; หากย้ายหรือยกเลิกช่อง ให้เปลี่ยน/ลบ Secret ที่ GitHub
 
 การรันซ้ำหลังบันทึก receipt จะไม่ส่งตอนเดิมซ้ำ แต่หาก Worker หยุดระหว่างที่ Discord รับข้อความกับการบันทึก receipt อาจเห็นข้อความชุดนั้นซ้ำได้ ไม่ควรถือว่าเป็นการส่งแบบ exactly once ข้อความ Discord มีชื่อเรื่อง เลขตอน ภาษา แหล่ง และ URL ตอนเท่านั้น
+
+หาก Secret มีค่าแต่รูปแบบ URL ผิด รอบตามเวลาจะยังตรวจมังงะและเก็บตอนที่ต้องแจ้งในคิวโดยไม่เผย Secret; ผลรันจะแสดง `invalid_webhook_secret` ให้แก้ค่า Secret แล้วรัน `test_discord: true` อีกครั้ง รอบทดสอบจะล้มเหลวพร้อมคำอธิบายจนกว่ารูปแบบ URL ถูกต้อง
 
 ## 8. ตรวจ Production หลัง Deploy
 

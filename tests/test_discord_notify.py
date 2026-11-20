@@ -128,6 +128,20 @@ class DiscordNotificationTests(unittest.TestCase):
         self.assertIn('ทดสอบ', send.call_args.args[1])
         self.assertIn('ไม่มีข้อมูลตอนจำลอง', send.call_args.args[1])
 
+    def test_invalid_discord_secret_does_not_stop_manga_checks(self):
+        data = snapshot()
+        with patch.dict(os.environ, {'MW_DISCORD_WEBHOOK_URL': 'not-a-webhook'}, clear=True), \
+             patch.object(cloud_worker, 'read_store', return_value=(data, 'sha')), \
+             patch.object(cloud_worker, 'process_snapshot', return_value={'checked': 1, 'new': 0}) as check, \
+             patch.object(cloud_worker, 'write_store') as write, \
+             patch.object(cloud_worker, 'deliver_pending') as deliver, \
+             patch('builtins.print') as output:
+            cloud_worker.main()
+        self.assertTrue(check.call_args.kwargs['notify_enabled'])
+        write.assert_called_once()
+        deliver.assert_not_called()
+        self.assertIn('invalid_webhook_secret', output.call_args.args[0])
+
 
 if __name__ == '__main__':
     unittest.main()

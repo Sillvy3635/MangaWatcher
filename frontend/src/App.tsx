@@ -1280,8 +1280,8 @@ function App() {
             section(
               "ช่องทางแจ้งเตือน",
               empty(
-                "ยังไม่เชื่อมบริการแจ้งเตือน",
-                "Discord, Telegram และ Push ต้องมี backend ที่เก็บ secret อย่างปลอดภัย ขณะนี้ดูตอนใหม่ได้ในหน้าอัปเดตล่าสุด",
+                "Discord ผ่าน GitHub Actions",
+                "ตั้ง MW_DISCORD_WEBHOOK_URL ใน GitHub Actions Secrets เพื่อแจ้งเฉพาะตอนใหม่ของเรื่องที่ติดตาม หลัง Worker บันทึกข้อมูลสำเร็จ ตรวจการเชื่อมต่อด้วย Run workflow → test_discord; Telegram และ Push ยังไม่พร้อมใช้งาน",
               ),
             )}
           {page === "logs" &&

@@ -3,6 +3,12 @@ on:
   schedule:
     - cron: '17 * * * *'
   workflow_dispatch:
+    inputs:
+      test_discord:
+        description: Send a labelled Discord connection test (no fake chapter)
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -29,4 +35,6 @@ jobs:
           MW_DATA_PATH: mangawatcher.json
           MW_DATA_BRANCH: main
           MW_DATA_TOKEN: ${{ secrets.MW_DATA_TOKEN }}
+          MW_DISCORD_WEBHOOK_URL: ${{ secrets.MW_DISCORD_WEBHOOK_URL }}
+          MW_DISCORD_TEST: ${{ inputs.test_discord }}
         run: python cloud_worker.py

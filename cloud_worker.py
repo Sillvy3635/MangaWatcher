@@ -13,6 +13,7 @@ from urllib.parse import quote, urlencode, urlsplit
 
 from server import dex_id, dex_parse, rss_parse, select_feed_updates
 from site_feeds import feed_urls, parse_site_feed
+from discord_notify import deliver_pending, enqueue, post_message, webhook_endpoint
 
 MAX_BYTES = 900_000
 USER_AGENT = 'MangaWatcher-cloud/0.1 (personal metadata tracker)'
@@ -168,7 +169,7 @@ def check_source(source, manga, requester):
     raise ValueError('ยังไม่มี adapter สำหรับแหล่งนี้')
 
 
-def process_snapshot(snapshot, requester=request_bytes, current=None):
+def process_snapshot(snapshot, requester=request_bytes, current=None, notify_enabled=False):
     current = current or datetime.now(timezone.utc)
     tables = snapshot['tables']
     manga_by_id = {row['id']: row for row in tables['manga']}
@@ -177,6 +178,7 @@ def process_snapshot(snapshot, requester=request_bytes, current=None):
     next_release = max((row['id'] for row in tables['releases']), default=0) + 1
     next_log = max((row['id'] for row in tables['logs']), default=0) + 1
     checked = added = 0
+    notify_ids = []
     feed_cache = {}
     def cached_request(endpoint):
         if endpoint not in feed_cache:
@@ -202,6 +204,8 @@ def process_snapshot(snapshot, requester=request_bytes, current=None):
                 if item['lang'] == 'RAW' and manga['tracked']:
                     tables['translation_tasks'].append({'release_id': next_release, 'stage': 'RAW', 'updated': current.isoformat()})
                 known.add(key)
+                if notify_enabled and source['checked'] is not None and not baseline and manga['tracked']:
+                    notify_ids.append(next_release)
                 next_release += 1
                 new += 1
             added += 0 if baseline else new
@@ -222,15 +226,27 @@ def process_snapshot(snapshot, requester=request_bytes, current=None):
         time.sleep(1)
     if checked:
         snapshot['exported_at'] = current.isoformat()
+    enqueue(snapshot, notify_ids)
     return {'checked': checked, 'new': added}
 
 
 def main():
     env = os.environ
+    webhook = env.get('MW_DISCORD_WEBHOOK_URL', '').strip()
+    test_discord = env.get('MW_DISCORD_TEST', '').lower() == 'true'
+    if test_discord and not webhook:
+        raise ValueError('ยังไม่ได้ตั้ง MW_DISCORD_WEBHOOK_URL ใน GitHub Actions Secrets')
+    if webhook:
+        webhook_endpoint(webhook)
     snapshot, sha = read_store(env)
-    result = process_snapshot(snapshot)
+    result = process_snapshot(snapshot, notify_enabled=bool(webhook))
     if result['checked']:
         write_store(env, snapshot, sha)
+    if webhook:
+        result['discord_sent'] = deliver_pending(env, webhook, snapshot, read_store, write_store, request_bytes)
+    if test_discord:
+        post_message(webhook, '🧪 MangaWatcher: ทดสอบการเชื่อมต่อ Discord สำเร็จ (ไม่มีข้อมูลตอนจำลอง)', request_bytes)
+        result['discord_test'] = 'sent'
     print(json.dumps(result))
 
 

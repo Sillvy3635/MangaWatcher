@@ -53,6 +53,32 @@ class CloudWorkerTests(unittest.TestCase):
             self.assertEqual(len(snapshot['tables']['releases']), 1)
             self.assertEqual(len(seen), 2)
 
+    def test_mangadex_starts_at_latest_and_only_adds_later_chapters(self):
+        snapshot = self.snapshot()
+        source = snapshot['tables']['sources'][0]
+        source.update(kind='mangadex', lang='ENG', name='MangaDex',
+                      url='https://mangadex.org/title/11111111-1111-1111-1111-111111111111')
+        published = '2026-11-18T00:00:00+00:00'
+        chapters = [1, 2, 3]
+        def requester(url):
+            self.assertIn('/manga/11111111-1111-1111-1111-111111111111/feed?', url)
+            payload = {'result': 'ok', 'data': [
+                {'id': f'chapter-{chapter}', 'attributes': {
+                    'chapter': str(chapter), 'title': '', 'translatedLanguage': 'en',
+                    'publishAt': published.replace('18T', f'{17 + chapter}T')}}
+                for chapter in reversed(chapters)]}
+            return 200, json.dumps(payload).encode()
+        moment = datetime(2026, 11, 22, tzinfo=timezone.utc)
+        with patch.object(worker.time, 'sleep'):
+            self.assertEqual(worker.process_snapshot(snapshot, requester, moment), {'checked': 1, 'new': 0})
+            self.assertEqual([row['chapter'] for row in snapshot['tables']['releases']], ['3'])
+            self.assertIn('ไม่แจ้งย้อนหลัง', snapshot['tables']['logs'][-1]['message'])
+            self.assertEqual(worker.process_snapshot(snapshot, requester, moment + timedelta(minutes=61))['new'], 0)
+            chapters.append(4)
+            self.assertEqual(worker.process_snapshot(snapshot, requester, moment + timedelta(minutes=122))['new'], 1)
+            self.assertEqual([row['chapter'] for row in snapshot['tables']['releases']], ['3', '4'])
+            self.assertEqual(snapshot['tables']['translation_tasks'], [])
+
     def test_tracked_mode_and_error_recovery(self):
         snapshot = self.snapshot()
         snapshot['tables']['settings'][0]['value'] = 'tracked'

@@ -11,7 +11,7 @@ import ssl
 import time
 from urllib.parse import quote, urlencode, urlsplit
 
-from server import dex_id, dex_parse, rss_parse
+from server import dex_id, dex_parse, rss_parse, select_feed_updates
 
 MAX_BYTES = 900_000
 USER_AGENT = 'MangaWatcher-cloud/0.1 (personal metadata tracker)'
@@ -173,6 +173,8 @@ def process_snapshot(snapshot, requester=request_bytes, current=None):
             continue
         try:
             incoming = check_source(source, manga, requester)
+            existing = [row for row in tables['releases'] if row['source_id'] == source['id']]
+            incoming, baseline = select_feed_updates(incoming, existing, source['checked'] is None, source['kind'])
             new = 0
             for item in incoming:
                 if item['lang'] not in ('RAW', 'ENG', 'TH'):
@@ -187,11 +189,12 @@ def process_snapshot(snapshot, requester=request_bytes, current=None):
                 known.add(key)
                 next_release += 1
                 new += 1
-            added += new
+            added += 0 if baseline else new
             source['status'] = 'ปกติ'
             previous = next((row for row in reversed(tables['logs']) if row['source_id'] == source['id']), None)
-            if new or (previous and previous['status'] == 'ผิดพลาด'):
-                tables['logs'].append({'id': next_log, 'source_id': source['id'], 'at': current.isoformat(), 'status': 'ปกติ', 'message': 'เพิ่มตอนใหม่ %s รายการ' % new})
+            if baseline or new or (previous and previous['status'] == 'ผิดพลาด'):
+                message = ('เริ่มติดตามจากตอนล่าสุด %s รายการ; ไม่แจ้งย้อนหลัง' if baseline else 'เพิ่มตอนใหม่ %s รายการ') % new
+                tables['logs'].append({'id': next_log, 'source_id': source['id'], 'at': current.isoformat(), 'status': 'ปกติ', 'message': message})
                 next_log += 1
         except Exception as exc:
             source['status'] = 'ผิดพลาด'

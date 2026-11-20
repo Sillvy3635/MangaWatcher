@@ -12,6 +12,20 @@ class Tests(unittest.TestCase):
         s.mutate('/api/manga',{'title':'Example Manga','aliases':'ตัวอย่าง|例','translated':'9'}); self.mid=s.state()['manga'][0]['id']
         s.mutate('/api/source',{'manga_id':self.mid,'name':'Sample RSS','url':'https://example.com/feed','lang':'ENG','kind':'rss','interval':60});self.sid=s.state()['sources'][0]['id']
     def tearDown(self): s.DB=self.old;self.tmp.cleanup()
+    def test_mangadex_starts_from_latest_without_old_backfill(self):
+        s.mutate('/api/source',{'id':self.sid,'manga_id':self.mid,'name':'MangaDex',
+                                'url':'https://mangadex.org/title/11111111-1111-1111-1111-111111111111',
+                                'kind':'mangadex','lang':'ENG','interval':60})
+        def chapter(number):
+            return {'external_id':f'ch-{number}','chapter':str(number),'title':'',
+                    'url':f'https://mangadex.org/chapter/ch-{number}',
+                    'published':f'2026-11-{number:02d}T00:00:00+00:00','lang':'ENG'}
+        with patch.object(s.time,'sleep'),patch.object(s,'check_source',return_value=[chapter(3),chapter(2),chapter(1)]) as check:
+            self.assertEqual(s.refresh()['new'],0)
+            self.assertEqual([row['chapter'] for row in s.state()['releases']],['3'])
+            check.return_value=[chapter(4),chapter(3),chapter(2),chapter(1)]
+            self.assertEqual(s.refresh()['new'],1)
+            self.assertEqual({row['chapter'] for row in s.state()['releases']},{'3','4'})
     def test_normalize(self):
         self.assertEqual(s.normalize('010.50'),'10.5');self.assertEqual(s.normalize('Special'),'Special');self.assertEqual(s.normalize('0'),'0')
     def test_rss_and_dedup(self):

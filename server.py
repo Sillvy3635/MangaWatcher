@@ -136,6 +136,24 @@ def dex_parse(obj,lang):
         out.append(dict(external_id=r['id'],chapter=normalize(a.get('chapter')),title=a.get('title') or '',url='https://mangadex.org/chapter/'+r['id'],published=date_iso(a.get('publishAt')),lang=LANGS.get(l,lang if lang!='ALL' else l.upper() or 'OTHER')))
     return out
 
+def select_feed_updates(incoming, existing, first_check, kind):
+    """Start a MangaDex source at its latest release without importing old chapters as new."""
+    if kind!='mangadex': return incoming, False
+    if first_check and not existing and incoming:
+        latest={}
+        for item in incoming:
+            if item['lang'] not in ('RAW','ENG','TH'): continue
+            lang=item['lang']
+            if lang not in latest or (item.get('published') or '',chapter_key(item['chapter']),item['external_id'])>(latest[lang].get('published') or '',chapter_key(latest[lang]['chapter']),latest[lang]['external_id']):
+                latest[lang]=item
+        return list(latest.values()), bool(latest)
+    watermark={}
+    for item in existing:
+        published=item.get('published')
+        if published and (item['lang'] not in watermark or published>watermark[item['lang']]):
+            watermark[item['lang']]=published
+    return [item for item in incoming if not item.get('published') or item['lang'] not in watermark or item['published']>=watermark[item['lang']]], False
+
 def rss_parse(raw,source):
     if b'<!DOCTYPE' in raw.upper() or b'<!ENTITY' in raw.upper(): raise ValueError('ไม่รองรับ XML DTD/entities')
     try: root=ET.fromstring(raw)
@@ -200,8 +218,13 @@ def refresh(sid=None, due=False, mode=None):
             try:
                 incoming=check_source(s)
                 with db() as c:
-                    count=sum(save_release(c,s['id'],r) for r in incoming); n+=count
-                    msg=f'พบ {len(incoming)} รายการ / เพิ่มใหม่ {count}'; status='ปกติ'
+                    existing=rows(c,'SELECT lang,published FROM releases WHERE source_id=?',(s['id'],))
+                    selected,baseline=select_feed_updates(incoming,existing,s['checked'] is None,s['kind'])
+                    count=sum(save_release(c,s['id'],r) for r in selected)
+                    n+=0 if baseline else count
+                    msg=(f'เริ่มติดตามจากตอนล่าสุด {count} รายการ; ไม่แจ้งย้อนหลัง' if baseline
+                         else f'พบ {len(incoming)} รายการ / เพิ่มใหม่ {count}')
+                    status='ปกติ'
             except Exception as e: status='ผิดพลาด'; msg=str(e)[:400]
             with db() as c:
                 c.execute('UPDATE sources SET checked=?,status=? WHERE id=?',(now(),status,s['id']))

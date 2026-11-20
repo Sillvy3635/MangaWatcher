@@ -76,6 +76,8 @@ Route ของหน้าเว็บใช้ `?view=queue` เป็นต�
 3. ไป [Actions → Update manga metadata](https://github.com/Sillvy3635/MangaWatcher/actions/workflows/manga-update.yml) → **Run workflow** เลือก `test_discord: true` แล้วรอผล `discord_test: sent` ใน log กับข้อความ “ทดสอบการเชื่อมต่อ” ในช่อง Discord ข้อความนี้ระบุว่าเป็นการทดสอบและไม่มีตอนจำลอง หากยังไม่ตั้ง Secret การรันแบบทดสอบจะล้มเหลวพร้อมข้อความแจ้งตรง ๆ
 4. หลังทดสอบ ให้ใช้ค่า `test_discord: false` หรือปล่อยให้รันตามเวลา ระบบจะส่งเฉพาะ release ใหม่ของเรื่องที่ติดตามหลังการตรวจครั้งแรกของแหล่งนั้นและเมื่อ Worker บันทึก private JSON สำเร็จ รอบที่ไม่มีตอนใหม่จะไม่ส่งข้อความ คิว `settings.discord_outbox` เก็บเพียง release ID ของข้อความที่ยังไม่ยืนยันและลองใหม่ในรอบถัดไปเมื่อ Discord ตอบผิดพลาด `429` จะรอตาม `retry_after`; หากย้ายหรือยกเลิกช่อง ให้เปลี่ยน/ลบ Secret ที่ GitHub
 
+ผลทดสอบจริงวันที่ 20 พฤศจิกายน 2026: [GitHub Actions run #44668209908](https://github.com/Sillvy3635/MangaWatcher/actions/runs/44668209908) สำเร็จ Worker รายงาน `discord_test: sent` และ Discord ตอบพร้อม message ID รอบนี้ `checked: 0`, `new: 0` จึงยังไม่ได้ยืนยันการแจ้งเตือนตอนใหม่จริง
+
 การรันซ้ำหลังบันทึก receipt จะไม่ส่งตอนเดิมซ้ำ แต่หาก Worker หยุดระหว่างที่ Discord รับข้อความกับการบันทึก receipt อาจเห็นข้อความชุดนั้นซ้ำได้ ไม่ควรถือว่าเป็นการส่งแบบ exactly once ข้อความ Discord มีชื่อเรื่อง เลขตอน ภาษา แหล่ง และ URL ตอนเท่านั้น
 
 หาก Secret มีค่าแต่รูปแบบ URL ผิด รอบตามเวลาจะยังตรวจมังงะและเก็บตอนที่ต้องแจ้งในคิวโดยไม่เผย Secret; ผลรันจะแสดง `invalid_webhook_secret` ให้แก้ค่า Secret แล้วรัน `test_discord: true` อีกครั้ง รอบทดสอบจะล้มเหลวพร้อมคำอธิบายจนกว่ารูปแบบ URL ถูกต้อง
@@ -94,7 +96,7 @@ Route ของหน้าเว็บใช้ `?view=queue` เป็นต�
 | Android / iPhone / PC | เปิด layout ได้และเพิ่มไปหน้า Home/Install ได้; ตรวจเครื่องจริงก่อนถือว่าผ่าน |
 | Public repo/Pages artifact | ไม่มี token, SQLite, JSON ข้อมูลจริง, `.env` หรือ backup |
 
-Pages/API/Worker เคยผ่านการตรวจ live แล้ว แต่ Discord ต้องรอการตั้ง Secret และตรวจข้อความในช่องจริงก่อนถือว่าเชื่อมสำเร็จ หากขั้นใดไม่ผ่าน ให้แก้และทดสอบใหม่ก่อนใช้ข้อมูลจริง PWA offline แสดงได้เฉพาะ shell; งานมังงะและ API ต้องมีอินเทอร์เน็ต Telegram/Push ยังไม่พร้อมใช้งาน
+Pages/API/Worker และการส่งข้อความทดสอบ Discord ผ่านการตรวจ live แล้ว การแจ้งเตือนตอนใหม่จริงยังไม่เกิดเหตุการณ์ให้สังเกต หากขั้นใดไม่ผ่าน ให้แก้และทดสอบใหม่ก่อนใช้ข้อมูลจริง PWA offline แสดงได้เฉพาะ shell; งานมังงะและ API ต้องมีอินเทอร์เน็ต Telegram/Push ยังไม่พร้อมใช้งาน
 
 ## ย้อนกลับและดูแลระบบ
 

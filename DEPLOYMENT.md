@@ -65,8 +65,8 @@ Route ของหน้าเว็บใช้ `?view=queue` เป็นต�
 ## 7. นำเข้าข้อมูลและเปิด Worker
 
 1. เปิด Pages URL แล้วกด **เข้าสู่ระบบด้วย GitHub** ตรวจว่า callback กลับมาที่ Pages URL เดิมและ fragment `#mw_session=...` ถูกลบจาก address bar หลังโหลด บัญชีอื่นต้องถูกปฏิเสธ
-2. ไปหน้า **ฐานข้อมูล** และตรวจว่าข้อมูลจาก `manga-notifier` ปรากฏ 16 เรื่อง/17 แหล่ง/17 ตอน โดยแหล่งทั้งหมดเป็น manual/disabled ก่อนนำเข้าข้อมูลชุดอื่น ให้ส่งออก JSON ปัจจุบันและตรวจการรวมข้อมูล เก็บ SQLite local เดิมไว้เป็น backup เพิ่มเติม
-3. ที่ repository โค้ดไป **Actions → Update manga metadata → Run workflow** เพื่อทดสอบ Worker ครั้งแรก Workflow `manga-update.yml` รันตามเวลา `17 * * * *` (ทุกชั่วโมงโดยประมาณ) และ manual ได้ แหล่ง RSS/MangaDex ต้องเป็น URL ที่เจ้าของได้รับอนุญาต; ไม่มีรายการต้นทางจริงในโค้ด
+2. ไปหน้า **ฐานข้อมูล** และตรวจข้อมูล private ล่าสุด (20 พฤศจิกายน 2026: 22 เรื่อง/25 แหล่ง/25 ตอน) โดยมี MangaDex ENG เปิดตรวจ 2 แหล่ง ส่วนแหล่งที่นำเข้าจากเว็บเดิมเป็น manual/disabled ก่อนนำเข้าข้อมูลชุดอื่น ให้ส่งออก JSON ปัจจุบันและตรวจการรวมข้อมูล เก็บ SQLite local เดิมไว้เป็น backup เพิ่มเติม
+3. ที่ repository โค้ดไป **Actions → Update manga metadata → Run workflow** เพื่อทดสอบ Worker Workflow `manga-update.yml` รันตามเวลา `17 * * * *` (ทุกชั่วโมงโดยประมาณ) และ manual ได้ รอบ `#44663225830` ตรวจ MangaDex 2 แหล่งสำเร็จ การเพิ่มแหล่ง RSS/MangaDex ใหม่ต้องตรวจสิทธิ์และยืนยันการจับคู่เรื่องก่อน; ไม่มีรายการต้นทางจริงในโค้ดสาธารณะ
 4. ตรวจ `MangaWatcher-Data/mangawatcher.json` และ commit history เฉพาะใน private repo ถ้าไม่มี source ที่ถึงรอบตรวจ Worker จะไม่เขียน commit ใหม่ หากตรวจแล้วมีการเปลี่ยนแปลงสถานะ/เวลา/ตอน จะเขียนเป็น batch commit พร้อม SHA conflict check
 
 ## 8. ตรวจ Production หลัง Deploy

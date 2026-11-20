@@ -2,11 +2,11 @@
 
 MangaWatcher รวม metadata ตอนใหม่ของ Manga, Manhwa และ Manhua จากแหล่งที่ผู้ใช้เพิ่มเอง เปรียบเทียบ RAW / ENG / TH และจัดคิวงานแปล UI ภาษาไทยแบบ dark admin dashboard ใช้ React/TypeScript/Vite ส่วน backend local ใช้ Python 3.10+ และ SQLite ในเครื่อง โค้ด production เตรียม GitHub Pages + Netlify Functions + GitHub private JSON และ Actions แล้ว ดูขั้นตอนจริงใน [DEPLOYMENT.md](DEPLOYMENT.md) ไม่มีข้อมูลตัวอย่างปะปนกับข้อมูลจริง
 
-ข้อมูลจาก private `manga-notifier` branch `main` ถูกย้ายรายการติดตามปัจจุบันและประวัติ Asura 6 เรื่องเข้า private `MangaWatcher-Data` โดยปิดการตรวจอัตโนมัติของเว็บต้นทางที่ยังไม่มี Adapter ที่ยืนยันแล้ว รายการ Asura เป็นข้อมูลบันทึกเก่า แสดงใน **มังงะทั้งหมด** และไม่ได้ติดตามโดยอัตโนมัติ รายละเอียดและวิธีย้อนกลับอยู่ใน [docs/MANGA_NOTIFIER_IMPORT.md](docs/MANGA_NOTIFIER_IMPORT.md)
+ข้อมูลจาก private `manga-notifier` branch `main` ถูกย้ายรายการติดตามปัจจุบันและประวัติ Asura 6 เรื่องเข้า private `MangaWatcher-Data` โดยปิดการตรวจอัตโนมัติของเว็บต้นทางที่ยังไม่มี Adapter ที่ยืนยันแล้ว รายการ Asura เป็นข้อมูลบันทึกเก่า แสดงใน **มังงะทั้งหมด**; มีหนึ่งเรื่องที่เปิดติดตามผ่าน MangaDex ENG ภายหลัง แต่แหล่ง Asura เดิมยังปิดอยู่ รายละเอียดและวิธีย้อนกลับอยู่ใน [docs/MANGA_NOTIFIER_IMPORT.md](docs/MANGA_NOTIFIER_IMPORT.md)
 
 หน้า **เว็บไซต์ต้นทาง** แยกทะเบียนเว็บไซต์ออกจากแหล่งรายเรื่องแล้ว เพิ่ม/แก้ไข/ลบเว็บไซต์ได้โดยไม่ต้องสร้างเรื่องจำลอง ทะเบียนนี้เป็น metadata เท่านั้น; การเพิ่มเว็บไซต์ไม่เริ่มตรวจอัตโนมัติ Asura Scans ถูกลงทะเบียนใน private JSON เป็นสถานะรอ Adapter และตรวจสิทธิ์ เนื่องจากคำขออัตโนมัติปัจจุบันได้รับ HTTP 403 challenge
 
-แหล่ง metadata ที่ตรวจสอบช่องทางทางการแล้ว เช่น MangaDex API และ MangaUpdates API พร้อมข้อจำกัดและสถานะการเชื่อมต่อ ดู [docs/ALLOWED_METADATA_SOURCES.md](docs/ALLOWED_METADATA_SOURCES.md) ปัจจุบันยังไม่มี source รายเรื่องที่เปิดตรวจอัตโนมัติใน private data
+แหล่ง metadata ที่ตรวจสอบช่องทางทางการแล้ว เช่น MangaDex API และ MangaUpdates API พร้อมข้อจำกัดและสถานะการเชื่อมต่อ ดู [docs/ALLOWED_METADATA_SOURCES.md](docs/ALLOWED_METADATA_SOURCES.md) ปัจจุบัน private data เปิด MangaDex ENG ที่ยืนยันการจับคู่แล้ว 2 แหล่ง ตรวจทุก 60 นาทีผ่าน GitHub Actions; รอบแรกเก็บตอนล่าสุดเป็นจุดเริ่มต้นโดยไม่แจ้งย้อนหลัง แหล่งเว็บเดิมที่นำเข้ายังคงปิดการตรวจ
 
 ## เริ่มใช้งานบน Windows
 

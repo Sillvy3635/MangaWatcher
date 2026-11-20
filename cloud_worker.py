@@ -12,6 +12,7 @@ import time
 from urllib.parse import quote, urlencode, urlsplit
 
 from server import dex_id, dex_parse, rss_parse, select_feed_updates
+from site_feeds import feed_urls, parse_site_feed
 
 MAX_BYTES = 900_000
 USER_AGENT = 'MangaWatcher-cloud/0.1 (personal metadata tracker)'
@@ -155,6 +156,15 @@ def check_source(source, manga, requester):
         if status != 200:
             raise RuntimeError('RSS HTTP %s' % status)
         return rss_parse(raw, {**source, 'manga_title': manga['title'], 'aliases': manga['aliases']})
+    if source['kind'] == 'site_feed':
+        found = {}
+        for endpoint in feed_urls(source):
+            status, raw = requester(endpoint)
+            if status != 200:
+                raise RuntimeError('ฟีดเว็บไซต์ HTTP %s' % status)
+            for item in parse_site_feed(raw, {**source, 'manga_title': manga['title'], 'aliases': manga['aliases']}, rss_parse):
+                found[item['external_id']] = item
+        return list(found.values())
     raise ValueError('ยังไม่มี adapter สำหรับแหล่งนี้')
 
 
@@ -167,12 +177,17 @@ def process_snapshot(snapshot, requester=request_bytes, current=None):
     next_release = max((row['id'] for row in tables['releases']), default=0) + 1
     next_log = max((row['id'] for row in tables['logs']), default=0) + 1
     checked = added = 0
+    feed_cache = {}
+    def cached_request(endpoint):
+        if endpoint not in feed_cache:
+            feed_cache[endpoint] = requester(endpoint)
+        return feed_cache[endpoint]
     for source in tables['sources']:
         manga = manga_by_id.get(source['manga_id'])
         if not manga or not source['enabled'] or source['kind'] == 'manual' or (mode == 'tracked' and not manga['tracked']) or not due(source, tables['logs'], current):
             continue
         try:
-            incoming = check_source(source, manga, requester)
+            incoming = check_source(source, manga, cached_request)
             existing = [row for row in tables['releases'] if row['source_id'] == source['id']]
             incoming, baseline = select_feed_updates(incoming, existing, source['checked'] is None, source['kind'])
             new = 0
@@ -190,11 +205,13 @@ def process_snapshot(snapshot, requester=request_bytes, current=None):
                 next_release += 1
                 new += 1
             added += 0 if baseline else new
-            source['status'] = 'ปกติ'
+            source['status'] = 'รอตอนใหม่ใน RSS' if source['kind'] == 'site_feed' and not incoming else 'ปกติ'
             previous = next((row for row in reversed(tables['logs']) if row['source_id'] == source['id']), None)
-            if baseline or new or (previous and previous['status'] == 'ผิดพลาด'):
-                message = ('เริ่มติดตามจากตอนล่าสุด %s รายการ; ไม่แจ้งย้อนหลัง' if baseline else 'เพิ่มตอนใหม่ %s รายการ') % new
-                tables['logs'].append({'id': next_log, 'source_id': source['id'], 'at': current.isoformat(), 'status': 'ปกติ', 'message': message})
+            if baseline or new or (previous and previous['status'] == 'ผิดพลาด') or (source['kind'] == 'site_feed' and source['checked'] is None and not incoming):
+                message = ('เริ่มติดตามจากตอนล่าสุด %s รายการ; ไม่แจ้งย้อนหลัง' % new if baseline else
+                           'ยังไม่พบเรื่องในหน้าฟีดล่าสุด; จะตรวจใหม่ตามรอบ' if source['status'] == 'รอตอนใหม่ใน RSS' else
+                           'เพิ่มตอนใหม่ %s รายการ' % new)
+                tables['logs'].append({'id': next_log, 'source_id': source['id'], 'at': current.isoformat(), 'status': source['status'], 'message': message})
                 next_log += 1
         except Exception as exc:
             source['status'] = 'ผิดพลาด'

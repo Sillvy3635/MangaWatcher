@@ -1270,7 +1270,8 @@ function App() {
                   <span>MangaDex API</span>
                   <span>RSS / Atom</span>
                   <span>เพิ่มตอนเอง</span>
-                  <span>HTML เฉพาะเว็บ: รอ Adapter และสิทธิ์ใช้งาน</span>
+                  <span>Thunder / QiManga: ใช้ RSS สาธารณะผูก URL รายเรื่อง</span>
+                  <span>Asura: รอสิทธิ์หรือฟีดที่เว็บอนุญาต</span>
                 </div>,
               )}
             </>
@@ -1555,6 +1556,7 @@ function EditorModal({
                   defaultValue={source?.kind || "rss"}
                 >
                   <option value="rss">RSS / Atom</option>
+                  <option value="site_feed">Thunder / QiManga RSS</option>
                   <option value="mangadex">MangaDex API</option>
                   <option value="manual">เพิ่มตอนเอง</option>
                 </select>

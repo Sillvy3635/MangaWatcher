@@ -9,6 +9,7 @@ from urllib.request import Request
 from urllib.parse import urlparse, urlencode, urljoin
 from xml.etree import ElementTree as ET
 from email.utils import parsedate_to_datetime
+from site_feeds import feed_urls, parse_site_feed, series_feed
 import ipaddress, socket
 
 ROOT = Path(__file__).resolve().parent
@@ -138,6 +139,13 @@ def dex_parse(obj,lang):
 
 def select_feed_updates(incoming, existing, first_check, kind):
     """Start a MangaDex source at its latest release without importing old chapters as new."""
+    if kind=='site_feed':
+        latest=max((chapter_key(item['chapter']) for item in existing),default=(0,Decimal(0)))
+        if latest[0]:
+            return [item for item in incoming if chapter_key(item['chapter'])>latest],False
+        if first_check and incoming:
+            return [max(incoming,key=lambda item:(chapter_key(item['chapter']),item.get('published') or ''))],True
+        return incoming,False
     if kind!='mangadex': return incoming, False
     if first_check and not existing and incoming:
         latest={}
@@ -187,8 +195,15 @@ def check_mangadex(s):
 def check_rss(s):
     return rss_parse(fetch(s['url']),s)
 
+def check_site_feed(s):
+    found={}
+    for url in feed_urls(s):
+        for item in parse_site_feed(fetch(url),s,rss_parse):
+            found[item['external_id']]=item
+    return list(found.values())
+
 # Register an adapter only after its source format and permission are verified.
-ADAPTERS={'mangadex':check_mangadex,'rss':check_rss}
+ADAPTERS={'mangadex':check_mangadex,'rss':check_rss,'site_feed':check_site_feed}
 def check_source(s):
     if s['kind'] not in ADAPTERS: raise ValueError('แหล่งข้อมูลแบบกำหนดเองต้องเพิ่มตอนด้วยตัวเอง')
     return ADAPTERS[s['kind']](s)
@@ -218,13 +233,13 @@ def refresh(sid=None, due=False, mode=None):
             try:
                 incoming=check_source(s)
                 with db() as c:
-                    existing=rows(c,'SELECT lang,published FROM releases WHERE source_id=?',(s['id'],))
+                    existing=rows(c,'SELECT lang,published,chapter FROM releases WHERE source_id=?',(s['id'],))
                     selected,baseline=select_feed_updates(incoming,existing,s['checked'] is None,s['kind'])
                     count=sum(save_release(c,s['id'],r) for r in selected)
                     n+=0 if baseline else count
                     msg=(f'เริ่มติดตามจากตอนล่าสุด {count} รายการ; ไม่แจ้งย้อนหลัง' if baseline
                          else f'พบ {len(incoming)} รายการ / เพิ่มใหม่ {count}')
-                    status='ปกติ'
+                    status='รอตอนใหม่ใน RSS' if s['kind']=='site_feed' and not incoming else 'ปกติ'
             except Exception as e: status='ผิดพลาด'; msg=str(e)[:400]
             with db() as c:
                 c.execute('UPDATE sources SET checked=?,status=? WHERE id=?',(now(),status,s['id']))
@@ -324,9 +339,10 @@ def mutate(path,p):
             else: c.execute('INSERT INTO manga(title,aliases,translated,tracked) VALUES(?,?,?,?)',values)
         elif path=='/api/source':
             kind=required(p,'kind'); lang=required(p,'lang'); url=required(p,'url')
-            if kind not in ('manual','rss','mangadex') or lang not in ('RAW','ENG','TH','ALL') or (lang=='ALL' and kind!='mangadex'): raise ValueError('ชนิดหรือภาษาไม่ถูกต้อง')
+            if kind not in ('manual','rss','mangadex','site_feed') or lang not in ('RAW','ENG','TH','ALL') or (lang=='ALL' and kind!='mangadex'): raise ValueError('ชนิดหรือภาษาไม่ถูกต้อง')
             if urlparse(url).scheme not in ('http','https') or not urlparse(url).hostname: raise ValueError('URL ไม่ถูกต้อง')
             if kind=='mangadex': dex_id(url)
+            if kind=='site_feed': series_feed({'url':url,'lang':lang})
             values=(int(p['manga_id']),required(p,'name'),url,kind,lang,max(30,min(1440,int(p.get('interval',60)))),int(bool(p.get('enabled',True))))
             if p.get('id'): c.execute('UPDATE sources SET manga_id=?,name=?,url=?,kind=?,lang=?,interval=?,enabled=?,checked=NULL WHERE id=?',(*values,int(p['id'])))
             else: c.execute('INSERT INTO sources(manga_id,name,url,kind,lang,interval,enabled) VALUES(?,?,?,?,?,?,?)',values)

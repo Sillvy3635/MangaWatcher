@@ -1,7 +1,7 @@
 const TABLES = ['manga', 'sources', 'releases', 'translation_tasks', 'logs', 'settings']
 const STAGES = new Set(['RAW', 'OCR', 'TRANSLATE', 'PROOFREAD', 'LETTERING', 'PUBLISHER', 'PUBLISHED'])
 const LANGS = new Set(['RAW', 'ENG', 'TH', 'ALL'])
-const KINDS = new Set(['mangadex', 'rss', 'manual'])
+const KINDS = new Set(['mangadex', 'rss', 'manual', 'site_feed'])
 const date = () => new Date().toISOString()
 const fail = (message, status = 400) => { const error = new Error(message); error.status = status; throw error }
 const text = (value, max = 1000) => typeof value === 'string' ? value.trim().slice(0, max) : ''
@@ -146,6 +146,7 @@ export function applyMutation(snapshot, action, payload) {
     const kind = text(payload.kind), lang = text(payload.lang), name = text(payload.name), sourceUrl = url(payload.url)
     if (!KINDS.has(kind) || !LANGS.has(lang) || (lang === 'ALL' && kind !== 'mangadex') || !name) fail('ชนิด ภาษา หรือชื่อเว็บไซต์ไม่ถูกต้อง')
     if (kind === 'mangadex' && !/^https:\/\/(www\.)?mangadex\.org\/title\/[0-9a-f-]{36}(?:\/|$)/i.test(sourceUrl)) fail('URL MangaDex ไม่ถูกต้อง')
+    if (kind === 'site_feed' && (lang !== 'ENG' || !/^https:\/\/(?:en-thunderscans\.com\/comics|qimanga\.com\/series)\/[a-z0-9-]+\/?$/i.test(sourceUrl))) fail('URL ฟีดเว็บไซต์ไม่ถูกต้อง')
     const interval = Math.max(30, Math.min(1440, Number(payload.interval || 60)))
     if (!Number.isInteger(interval)) fail('รอบตรวจไม่ถูกต้อง')
     const values = { manga_id, name, url: sourceUrl, kind, lang, interval, enabled: payload.enabled ? 1 : 0, checked: null }

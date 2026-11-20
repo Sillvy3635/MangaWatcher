@@ -11,7 +11,7 @@ export type Source = {
   manga_id: number;
   name: string;
   url: string;
-  kind: "mangadex" | "rss" | "manual";
+  kind: "mangadex" | "rss" | "manual" | "site_feed";
   lang: Language;
   interval: number;
   enabled: number;

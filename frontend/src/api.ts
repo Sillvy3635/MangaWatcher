@@ -1,9 +1,9 @@
 import type { AppState } from "./types";
+import { clearStoredSession, readSession, storeSession } from "./authStorage.mjs";
 
 export const pagesMode = import.meta.env.VITE_API_MODE === "pages";
 export const cloudMode = pagesMode || import.meta.env.VITE_API_MODE === "cloud";
 const apiOrigin = pagesMode ? (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "") : "";
-const sessionKey = "mw.pages.session";
 const endpoint = (path: string) => `${apiOrigin}/api/${path}`;
 
 export class ApiError extends Error {
@@ -15,19 +15,18 @@ export function consumeLoginFragment(): void {
   if (!pagesMode || !window.location.hash.startsWith("#mw_session=")) return;
   try {
     const token = decodeURIComponent(window.location.hash.slice("#mw_session=".length));
-    if (/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token)) window.sessionStorage.setItem(sessionKey, token);
+    if (/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token)) storeSession(token);
   } catch { /* Reject malformed fragments and unavailable storage. */ }
   window.history.replaceState(null, "", window.location.pathname + window.location.search);
 }
 
 export function loginUrl(): string { return endpoint("auth/start"); }
 export function clearSession(): void {
-  if (pagesMode) { try { window.sessionStorage.removeItem(sessionKey); } catch { /* Storage unavailable. */ } }
+  if (pagesMode) clearStoredSession();
 }
 
 function bearer(): string {
-  let token: string | null = null;
-  try { token = window.sessionStorage.getItem(sessionKey); } catch { /* Storage unavailable. */ }
+  const token = readSession();
   if (!token) throw new ApiError("กรุณาเข้าสู่ระบบด้วย GitHub", 401);
   return token;
 }

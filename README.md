@@ -2,6 +2,8 @@
 
 MangaWatcher รวม metadata ตอนใหม่ของ Manga, Manhwa และ Manhua จากแหล่งที่ผู้ใช้เพิ่มเอง เปรียบเทียบ RAW / ENG / TH และจัดคิวงานแปล UI ภาษาไทยแบบ dark admin dashboard ใช้ React/TypeScript/Vite ส่วน backend local ใช้ Python 3.10+ และ SQLite ในเครื่อง โค้ด production เตรียม GitHub Pages + Netlify Functions + GitHub private JSON และ Actions แล้ว ดูขั้นตอนจริงใน [DEPLOYMENT.md](DEPLOYMENT.md) ไม่มีข้อมูลตัวอย่างปะปนกับข้อมูลจริง
 
+หน้าออนไลน์จำการเข้าสู่ระบบ GitHub บนอุปกรณ์เดิมได้นานสูงสุด 14 วันหลัง login โดยเก็บเฉพาะ signed app session ใน browser; กด **ออกจากระบบ** เพื่อลบ session จากอุปกรณ์นี้ หากใช้โหมดไม่ระบุตัวตนหรือล้างข้อมูลเว็บไซต์ ต้อง login ใหม่ GitHub access token ไม่ถูกเก็บใน frontend
+
 ข้อมูลจาก private `manga-notifier` branch `main` ถูกย้ายรายการติดตามปัจจุบันและประวัติ Asura 6 เรื่องเข้า private `MangaWatcher-Data` โดยปิดการตรวจอัตโนมัติของเว็บต้นทางที่ยังไม่มี Adapter ที่ยืนยันแล้ว รายการ Asura เป็นข้อมูลบันทึกเก่า แสดงใน **มังงะทั้งหมด**; มีหนึ่งเรื่องที่เปิดติดตามผ่าน MangaDex ENG ภายหลัง แต่แหล่ง Asura เดิมยังปิดอยู่ รายละเอียดและวิธีย้อนกลับอยู่ใน [docs/MANGA_NOTIFIER_IMPORT.md](docs/MANGA_NOTIFIER_IMPORT.md)
 
 หน้า **เว็บไซต์ต้นทาง** แยกทะเบียนเว็บไซต์ออกจากแหล่งรายเรื่องแล้ว เพิ่ม/แก้ไข/ลบเว็บไซต์ได้โดยไม่ต้องสร้างเรื่องจำลอง ทะเบียนนี้เป็น metadata เท่านั้น; การเพิ่มเว็บไซต์ไม่เริ่มตรวจอัตโนมัติ Asura Scans และ O Translations (OTL) ถูกลงทะเบียนใน private JSON เป็นสถานะรอ Adapter และตรวจสิทธิ์ Asura ได้ HTTP 403 challenge; OTL ยังไม่มีช่องทาง RSS/API ที่ยืนยันให้ใช้กับโครงการนี้
@@ -52,6 +54,7 @@ node --check web/app.js
 node --test cloud/cloud.test.mjs
 cd frontend
 npm ci
+npm test
 npm run build
 npm run lint
 ```

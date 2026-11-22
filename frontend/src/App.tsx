@@ -1052,7 +1052,7 @@ function App() {
               <CloudOff size={13} /> Actions ยังไม่เชื่อม
             </Badge>
             {cloudMode && connected && <Button variant="outline" size="sm" onClick={() => {
-              void api("logout", {}).then(() => { clearSession(); window.location.reload(); }).catch((e) => setNotice((e as Error).message));
+              void api("logout", {}).catch(() => {}).finally(() => { clearSession(); window.location.reload(); });
             }}><LogOut size={14} /> ออกจากระบบ</Button>}
           </div>
         </header>

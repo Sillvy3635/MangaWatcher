@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "test": "node --test authStorage.test.mjs",
     "build": "tsc -b && vite build && node scripts/postbuild.mjs",
     "lint": "oxlint",
     "preview": "vite preview"

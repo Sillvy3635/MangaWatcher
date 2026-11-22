@@ -39,6 +39,7 @@ function cookie(request, name) {
 const secureCookie = (name, value, maxAge) => `${name}=${value}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`
 const random = () => randomBytes(32).toString('base64url')
 const sameOrigin = (request, config) => new URL(request.url).origin === config.origin
+const PAGES_SESSION_MS = 14 * 24 * 60 * 60_000
 
 export function startLogin(request, config) {
   if (!sameOrigin(request, config)) throw new AuthError('origin ไม่ถูกต้อง', 403)
@@ -63,7 +64,7 @@ export async function finishLogin(request, config, fetcher = fetch) {
   if (!userResponse.ok) throw new AuthError('ตรวจบัญชี GitHub ไม่สำเร็จ', 502)
   const user = await userResponse.json()
   if (user.id !== config.allowedId) throw new AuthError('บัญชีนี้ไม่ได้รับอนุญาต', 403)
-  const session = seal({ id: user.id, csrf: random(), exp: Date.now() + (config.frontend ? 4 : 24) * 60 * 60_000 }, config.sessionSecret)
+  const session = seal({ id: user.id, csrf: random(), exp: Date.now() + (config.frontend ? PAGES_SESSION_MS : 24 * 60 * 60_000) }, config.sessionSecret)
   const destination = config.frontend ? `${config.frontend.url}#mw_session=${encodeURIComponent(session)}` : config.origin
   const headers = new Headers({ Location: destination, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' })
   if (!config.frontend) headers.append('Set-Cookie', secureCookie('__Host-mw_session', session, 86400))

@@ -33,6 +33,7 @@ jobs:
       - name: Install and test frontend
         run: |
           npm ci --prefix frontend
+          npm test --prefix frontend
           npm run lint --prefix frontend
       - name: Build Pages site
         env:

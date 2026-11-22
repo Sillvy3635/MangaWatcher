@@ -1,6 +1,6 @@
 # MangaWatcher — ROADMAP
 
-อัปเดต 20 พฤศจิกายน 2026 เป้าหมายคือระบบ private-first ค่าใช้จ่ายเป้าหมาย 0 บาท/เดือนภายใต้โควตาฟรีที่ตรวจใหม่ก่อนเปิดใช้ ไม่รับประกันว่าบริการจะฟรีตลอด
+อัปเดต 22 พฤศจิกายน 2026 เป้าหมายคือระบบ private-first ค่าใช้จ่ายเป้าหมาย 0 บาท/เดือนภายใต้โควตาฟรีที่ตรวจใหม่ก่อนเปิดใช้ ไม่รับประกันว่าบริการจะฟรีตลอด
 
 ## Phase 0 — Local MVP เดิม (เสร็จ)
 
@@ -19,6 +19,7 @@
 ## Phase 2 — Cloud แบบ private (เปิดใช้งานบางส่วน)
 
 - ทำแล้ว: GitHub Pages frontend + Netlify Functions, GitHub OAuth state+PKCE, owner ID allowlist, signed app session สำหรับ Pages, CORS เฉพาะ Pages origin, Origin check, rate limit config, schema validation และ audit log การแก้ไข cloud; ยืนยัน Pages/Netlify endpoints แล้ว ยังต้องตรวจบนอุปกรณ์จริง
+- 22 พฤศจิกายน 2026: แก้การต้อง login ใหม่เมื่อปิดแท็บ โดยเก็บ signed app session ของ Pages ใน localStorage สูงสุด 14 วัน (fallback sessionStorage เมื่อ persistent storage ใช้ไม่ได้) ล้างทั้งสองที่เมื่อ logout/401; ไม่เก็บ GitHub access token ใน browser ทดสอบ browser storage และอายุ session ฝั่ง API ด้วย mock; การกลับมาเปิดเว็บข้ามวันบน Android/iPhone จริงยังรอตรวจ
 - ทำแล้วในโค้ด: GitHub private JSON store ผ่าน server-only token, commit ต่อ mutation, SHA conflict, export/import แบบตรวจรุ่น, ใช้ JSON schema 2 ที่ local export ได้; จำกัดไฟล์ 900 KB ตามรูปแบบ Contents API ที่ใช้ และเก็บประวัติ commit ไว้กู้คืน
 - ยังเหลือ: ทดสอบจริงบน PC/Android/iPhone, แยกข้อมูลเมื่อโตเกิน 900 KB, ทดสอบ conflict/live recovery, ตรวจโควตาและค่าใช้จ่ายจริง
 - ทำแล้ว: `deploy.yml` สำหรับ Pages และ `manga-update.yml` ทุก 60 นาทีสำหรับ MangaDex/RSS ที่ผู้ใช้กำหนด, HTTPS พร้อม DNS pinning/ปฏิเสธ private network และ redirect, GET retry, backoff ตามแหล่ง, dedup release, batch commit หลังตรวจ; ทดสอบ live Actions กับ MangaDex 2 แหล่งและ Thunder/QiManga RSS 13 แหล่งแล้ว ยังไม่มี notification idempotency
